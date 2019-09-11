@@ -8,13 +8,14 @@ defmodule Zero.Game do
 
   @inital_cards 5
 
-  alias Zero.Game
+  alias Zero.{Game, EventManager}
 
   defstruct players: [],
             deck: [],
             shown: [],
             shown_color: nil,
-            can_pass: false
+            can_pass: false,
+            name: nil
 
   def child_spec(init_args) do
     %{
@@ -29,7 +30,8 @@ defmodule Zero.Game do
   end
 
   def start_link(name) do
-    game = %Game{deck: shuffle_cards()}
+    EventManager.start_link(name)
+    game = %Game{deck: shuffle_cards(), name: name}
     GenStateMachine.start_link __MODULE__,
                                {:waiting_players, game},
                                name: via(name)
@@ -46,47 +48,24 @@ defmodule Zero.Game do
     end
   end
 
-  def join(name, code) do
-    GenStateMachine.cast via(name), {:join, self(), code}
-  end
+  defp cast(name, args), do: GenStateMachine.cast via(name), args
+  defp call(name, args), do: GenStateMachine.call via(name), args
 
-  def deal(name) do
-    GenStateMachine.cast via(name), :deal
-  end
-
-  def get_hand(name) do
-    GenStateMachine.call via(name), :get_hand
-  end
-
-  def get_players_number(name) do
-    GenStateMachine.call via(name), :players_num
-  end
-
-  def get_shown(name) do
-    GenStateMachine.call via(name), :get_shown
-  end
-
-  def play(name, num, color \\ nil) do
-    GenStateMachine.call via(name), {:play, num, color}
-  end
-
-  def pick_from_deck(name) do
-    GenStateMachine.call via(name), :pick_from_deck
-  end
-
-  def pass(name) do
-    GenStateMachine.call via(name), :pass
-  end
-
-  def is_my_turn?(name) do
-    GenStateMachine.call via(name), :is_my_turn?
-  end
-
-  def color?(name) do
-    GenStateMachine.call via(name), :color?
-  end
+  def join(name, code), do: cast name, {:join, self(), code}
+  def deal(name), do: cast name, :deal
+  def get_hand(name), do: call name, :get_hand
+  def get_players_number(name), do: call name, :players_num
+  def get_shown(name), do: call name, :get_shown
+  def play(name, num, color \\ nil), do: call name, {:play, num, color}
+  def pick_from_deck(name), do: call name, :pick_from_deck
+  def pass(name), do: call name, :pass
+  def is_my_turn?(name), do: call name, :is_my_turn?
+  def color?(name), do: call name, :color?
+  def players(name), do: call name, :players
+  def whose_turn_is_it?(name), do: call name, :whose_turn_is_it?
 
   def stop(name) do
+    EventManager.stop(name)
     GenStateMachine.stop via(name)
   end
 
@@ -94,6 +73,7 @@ defmodule Zero.Game do
 
   def waiting_players(:cast, {:join, player_pid, code}, game) do
     Process.monitor player_pid
+    EventManager.notify(game.name, {:join, code})
     {:keep_state, %Game{game | players: [{player_pid, code, []}|game.players]}}
   end
 
@@ -109,6 +89,7 @@ defmodule Zero.Game do
                 end
     game = List.foldl(Enum.to_list(1..times), game, give_card)
            |> shown_card()
+    EventManager.notify(game.name, :dealing)
     {:next_state, :playing, game}
   end
 
@@ -118,8 +99,9 @@ defmodule Zero.Game do
 
   def waiting_players(:info, {:DOWN, _ref, :process, player_pid, _reason},
                       %Game{players: players} = game) do
-    players = List.keydelete(players, player_pid, 0)
-    {:keep_state, %Game{game | players: players}}
+    {_, code, _} = player = List.keyfind(players, player_pid, 0)
+    EventManager.notify(game.name, {:disconnected, code})
+    {:keep_state, %Game{game | players: players -- [player]}}
   end
 
   ## State: playing
@@ -130,10 +112,12 @@ defmodule Zero.Game do
         players
       {nil, code, cards} ->
         Process.monitor player_pid
+        EventManager.notify(game.name, {:join, code})
         List.keyreplace(players, code, 1, {player_pid, code, cards})
       {old_pid, code, cards} ->
         Process.exit old_pid, :kicked
         Process.monitor player_pid
+        EventManager.notify(game.name, {:join, code})
         List.keyreplace(players, code, 1, {player_pid, code, cards})
     end
     {:keep_state, %Game{game | players: players}}
@@ -180,6 +164,16 @@ defmodule Zero.Game do
     {:keep_state_and_data, [{:reply, from, color}]}
   end
 
+  def playing({:call, from}, :whose_turn_is_it?,
+              %Game{players: [{_, code, _}|_]}) do
+    {:keep_state_and_data, [{:reply, from, code}]}
+  end
+
+  def playing({:call, from}, :players, %Game{players: players}) do
+    codes = for {_, code, _} <- players, do: code
+    {:keep_state_and_data, [{:reply, from, codes}]}
+  end
+
   def playing({:call, {player_pid, _} = from}, _action,
               %Game{players: [{other_pid, _, _}|_]})
       when player_pid != other_pid do
@@ -204,8 +198,11 @@ defmodule Zero.Game do
              |> play_card(played_card)
              |> effects(played_card, choosen_color)
       if game_ends?(game) do
+        EventManager.notify(game.name, {:game_over, who_wins?(game)})
         {:next_state, :ended, game, [{:reply, from, :ok}]}
       else
+        %Game{players: [{_, code, _}|_]} = game
+        EventManager.notify(game.name, {:turn, code})
         {:keep_state, game, [{:reply, from, :ok}]}
       end
     else
@@ -217,6 +214,8 @@ defmodule Zero.Game do
     {:keep_state_and_data, [{:reply, from, {:error, :empty_deck}}]}
   end
   def playing({:call, from}, :pick_from_deck, game) do
+    %Game{players: [{_, code, _}|_]} = game
+    EventManager.notify(game.name, {:pick_from_deck, code})
     {:keep_state, pick_card(game), [{:reply, from, :ok}]}
   end
 
@@ -224,7 +223,11 @@ defmodule Zero.Game do
     {:keep_state_and_data, [{:reply, from, {:error, :cannot_pass}}]}
   end
   def playing({:call, from}, :pass, game) do
-    {:keep_state, next_player(game), [{:reply, from, :ok}]}
+    %Game{players: [{_, code, _}|_]} = game
+    EventManager.notify(game.name, {:pass, code})
+    %Game{players: [{_, code, _}|_]} = game = next_player(game)
+    EventManager.notify(game.name, {:turn, code})
+    {:keep_state, game, [{:reply, from, :ok}]}
   end
 
   def playing(:info, {:DOWN, _ref, :process, player_pid, _reason},
@@ -233,6 +236,7 @@ defmodule Zero.Game do
       nil ->
         players
       {_, code, cards} ->
+        EventManager.notify(game.name, {:disconnected, code})
         List.keyreplace(players, player_pid, 0, {nil, code, cards})
     end
     {:keep_state, %Game{game | players: players}}
@@ -258,6 +262,13 @@ defmodule Zero.Game do
 
   defp game_ends?(%Game{players: players}) do
     Enum.any? players, fn({_pid, _code, cards}) -> cards == [] end
+  end
+
+  defp who_wins?(%Game{players: players}) do
+    players
+    |> Enum.filter(fn({_pid, _code, cards}) -> cards == [] end)
+    |> hd()
+    |> elem(1)
   end
 
   defp effects(game, {_color, :plus_2}, _choosen_color) do

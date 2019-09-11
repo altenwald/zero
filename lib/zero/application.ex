@@ -10,6 +10,7 @@ defmodule Zero.Application do
     # List all child processes to be supervised
     children = [
       {Registry, keys: :unique, name: Zero.Game.Registry},
+      {Registry, keys: :unique, name: Zero.EventManager.Registry},
       {DynamicSupervisor, strategy: :one_for_one, name: Zero.Games},
     ]
 

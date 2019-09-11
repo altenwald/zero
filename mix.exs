@@ -22,7 +22,8 @@ defmodule Zero.MixProject do
   # Run "mix help deps" to learn about dependencies.
   defp deps do
     [
-      {:gen_state_machine, "~> 2.0"}
+      {:gen_state_machine, "~> 2.0"},
+      {:gen_stage, "~> 0.14"},
     ]
   end
 end

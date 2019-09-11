@@ -2,8 +2,9 @@ defmodule Zero do
   @moduledoc """
   Documentation for Zero.
   """
+  use GenStage
 
-  alias Zero.Game
+  alias Zero.{Game, EventManager}
   alias IO.ANSI
 
   defp ask(prompt) do
@@ -14,18 +15,40 @@ defmodule Zero do
   end
 
   defp ask_num(prompt) do
-    ask(prompt)
-    |> String.to_integer()
+    try do
+      ask(prompt)
+      |> String.to_integer()
+    rescue
+      _ in ArgumentError -> ask_num(prompt)
+    end
   end
 
-  def start(name) do
+  def start(name \\ __MODULE__) do
     Game.start name
+    pid = EventManager.get_pid(name)
+    GenStage.start_link __MODULE__, [pid, self()]
     user = ask "name"
     waiting(name, user)
   end
 
+  def init([producer, game]) do
+    {:consumer, game, subscribe_to: [producer]}
+  end
+
+  def handle_events(events, _from, game) do
+    for event <- events do
+      case event do
+        {:join, name} -> IO.puts "event: join #{name}"
+        {:game_over, winner} -> IO.puts "\nG A M E   O V E R\n\n#{winner} WINS!!!"
+        _ -> send game, event
+      end
+    end
+    {:noreply, [], game}
+  end
+
   def waiting(name, user) do
     Game.join name, user
+    IO.puts "Note that 'deal' should be made when everyone is onboarding."
     case ask("deal? [Y/n]") do
       "n" ->
         waiting(name, user)
@@ -39,12 +62,13 @@ defmodule Zero do
     case Game.get_shown(name) do
       :game_over ->
         IO.puts "GAME OVER!"
-      card ->        
+      card ->
         IO.puts [ANSI.reset(), ANSI.clear()]
-        IO.puts "Zero Game"
-        IO.puts "Shown -->"
+        IO.puts "Zero Game - #{vsn()}"
+        IO.puts "--------------------"
+        IO.puts "Shown --> (color: #{Game.color?(name)})"
         draw_card(card)
-        IO.puts "You hand -->"
+        IO.puts "Your hand -->"
         cards = Game.get_hand(name)
         draw_cards(cards)
         if Game.is_my_turn?(name) do
@@ -54,7 +78,7 @@ defmodule Zero do
             "y" ->
               num = ask_num("card")
               color = case Map.get(cards, num) do
-                {:special, _} -> to_color_atom(ask("color"))
+                {:special, _} -> get_color()
                 _ -> nil
               end
               Game.play(name, num, color)
@@ -62,21 +86,39 @@ defmodule Zero do
           playing(name, user)
         else
           IO.puts "waiting for your turn..."
-          Process.sleep(1_000)
-          playing(name, user)
+          wait_for_turn(name, user)
         end
     end
   end
 
-  defp to_color_atom("red"), do: :red
-  defp to_color_atom("green"), do: :green
-  defp to_color_atom("blue"), do: :blue
-  defp to_color_atom("yellow"), do: :yellow
+  defp wait_for_turn(name, user) do
+    receive do
+      {:turn, ^user} ->
+        playing(name, user)
+      other ->
+        IO.puts("event: #{inspect other}")
+        wait_for_turn(name, user)
+    end
+  end
 
-  defp to_color(:special), do: ANSI.black_background()
+  def vsn do
+    to_string(Application.spec(:zero)[:vsn])
+  end
+
+  defp get_color do
+    case ask("color: [R]ed [G]reen [B]lue [Y]ellow") do
+      "r" -> :red
+      "g" -> :green
+      "b" -> :blue
+      "y" -> :yellow
+      _ -> get_color()
+    end
+  end
+
+  defp to_color(:special), do: [ANSI.black_background(), ANSI.white]
   defp to_color(:red), do: [ANSI.red_background(), ANSI.black()]
   defp to_color(:green), do: [ANSI.green_background(), ANSI.black()]
-  defp to_color(:blue), do: [ANSI.blue_background(), ANSI.black()]
+  defp to_color(:blue), do: [ANSI.blue_background(), ANSI.white()]
   defp to_color(:yellow), do: [ANSI.light_yellow_background(), ANSI.black()]
 
   defp to_type(n) when is_integer(n), do: " #{n} "
@@ -99,13 +141,17 @@ defmodule Zero do
   end
 
   defp draw_cards(cards) do
-    cards = for {_, {color, type}} <- cards, do: {to_color(color), to_type(type)}
+    cards = for {i, {color, type}} <- cards, do: {i, to_color(color), to_type(type)}
     [
-      for({color, _} <- cards, do: [color, "+-----+", ANSI.reset()]), "\n",
-      for({color, _}  <- cards, do: [color, "|     |", ANSI.reset()]), "\n",
-      for({color, type}  <- cards, do: [color, "| #{type} |", ANSI.reset()]), "\n",
-      for({color, _}  <- cards, do: [color, "|     |", ANSI.reset()]), "\n",
-      for({color, _}  <- cards, do: [color, "+-----+", ANSI.reset()]), "\n"
+      for({i, _color, _} <- cards, do: ["  #{pad(i)}   "]), "\n",
+      for({_i, color, _} <- cards, do: [color, "+-----+", ANSI.reset()]), "\n",
+      for({_i, color, _}  <- cards, do: [color, "|     |", ANSI.reset()]), "\n",
+      for({_i, color, type}  <- cards, do: [color, "| #{type} |", ANSI.reset()]), "\n",
+      for({_i, color, _}  <- cards, do: [color, "|     |", ANSI.reset()]), "\n",
+      for({_i, color, _}  <- cards, do: [color, "+-----+", ANSI.reset()]), "\n"
     ] |> IO.puts()
   end
+
+  defp pad(i) when i > 10, do: to_string(i)
+  defp pad(i), do: " #{i}"
 end
