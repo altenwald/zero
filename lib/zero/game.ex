@@ -13,51 +13,81 @@ defmodule Zero.Game do
   defstruct players: [],
             deck: [],
             shown: [],
-            shown_color: nil
+            shown_color: nil,
+            can_pass: false
 
-  def start_link do
+  def child_spec(init_args) do
+    %{
+      id: __MODULE__,
+      start: {__MODULE__, :start_link, [init_args]},
+      restart: :transient
+    }
+  end
+
+  defp via(game) do
+    {:via, Registry, {Zero.Game.Registry, game}}
+  end
+
+  def start_link(name) do
     game = %Game{deck: shuffle_cards()}
-    GenStateMachine.start_link __MODULE__, {:waiting_players, game}
+    GenStateMachine.start_link __MODULE__,
+                               {:waiting_players, game},
+                               name: via(name)
   end
 
-  def join(game_pid, code) do
-    GenStateMachine.cast game_pid, {:join, self(), code}
+  def start(game) do
+    DynamicSupervisor.start_child Zero.Games, {__MODULE__, game}
   end
 
-  def deal(game_pid) do
-    GenStateMachine.cast game_pid, :deal
+  def exists?(game) do
+    case Registry.lookup(Zero.Game.Registry, game) do
+      [{_pid, nil}] -> true
+      [] -> false
+    end
   end
 
-  def get_hand(game_pid) do
-    GenStateMachine.call game_pid, :get_hand
+  def join(name, code) do
+    GenStateMachine.cast via(name), {:join, self(), code}
   end
 
-  def get_players_number(game_pid) do
-    GenStateMachine.call game_pid, :players_num
+  def deal(name) do
+    GenStateMachine.cast via(name), :deal
   end
 
-  def get_shown(game_pid) do
-    GenStateMachine.call game_pid, :get_shown
+  def get_hand(name) do
+    GenStateMachine.call via(name), :get_hand
   end
 
-  def play(game_pid, num, color \\ nil) do
-    GenStateMachine.call game_pid, {:play, num, color}
+  def get_players_number(name) do
+    GenStateMachine.call via(name), :players_num
   end
 
-  def pick_from_deck(game_pid) do
-    GenStateMachine.call game_pid, :pick_from_deck
+  def get_shown(name) do
+    GenStateMachine.call via(name), :get_shown
   end
 
-  def pass(game_pid) do
-    GenStateMachine.call game_pid, :pass
+  def play(name, num, color \\ nil) do
+    GenStateMachine.call via(name), {:play, num, color}
   end
 
-  def is_my_turn?(game_pid) do
-    GenStateMachine.call game_pid, :is_my_turn?
+  def pick_from_deck(name) do
+    GenStateMachine.call via(name), :pick_from_deck
   end
 
-  def stop(game_pid) do
-    GenStateMachine.stop game_pid
+  def pass(name) do
+    GenStateMachine.call via(name), :pass
+  end
+
+  def is_my_turn?(name) do
+    GenStateMachine.call via(name), :is_my_turn?
+  end
+
+  def color?(name) do
+    GenStateMachine.call via(name), :color?
+  end
+
+  def stop(name) do
+    GenStateMachine.stop via(name)
   end
 
   ## State: waiting for players
@@ -67,6 +97,9 @@ defmodule Zero.Game do
     {:keep_state, %Game{game | players: [{player_pid, code, []}|game.players]}}
   end
 
+  def waiting_players(:cast, :deal, %Game{players: p}) when length(p) < 2 do
+    :keep_state_and_data
+  end
   def waiting_players(:cast, :deal, game) do
     times = @inital_cards * length(game.players)
     give_card = fn(_, game) ->
@@ -139,6 +172,14 @@ defmodule Zero.Game do
     {:keep_state_and_data, [{:reply, from, reply}]}
   end
 
+  def playing({:call, from}, :color?,
+              %Game{shown_color: color, shown: [{:special, _}|_]}) do
+    {:keep_state_and_data, [{:reply, from, color}]}
+  end
+  def playing({:call, from}, :color?, %Game{shown: [{color, _}|_]}) do
+    {:keep_state_and_data, [{:reply, from, color}]}
+  end
+
   def playing({:call, {player_pid, _} = from}, _action,
               %Game{players: [{other_pid, _, _}|_]})
       when player_pid != other_pid do
@@ -149,6 +190,10 @@ defmodule Zero.Game do
               %Game{players: [{_, _, cards}|_]})
       when length(cards) <= num or num < 0 do
     {:keep_state_and_data, [{:reply, from, {:error, :invalid_number}}]}
+  end
+  def playing({:call, from}, {:play, _num, color}, _game)
+      when color not in @card_colors and color != nil do
+    {:keep_state_and_data, [{:reply, from, {:error, :invalid_choosen_color}}]}
   end
   def playing({:call, from}, {:play, num, choosen_color},
               %Game{players: [{_pid, _code, cards}|_players],
@@ -175,6 +220,9 @@ defmodule Zero.Game do
     {:keep_state, pick_card(game), [{:reply, from, :ok}]}
   end
 
+  def playing({:call, from}, :pass, %Game{can_pass: false}) do
+    {:keep_state_and_data, [{:reply, from, {:error, :cannot_pass}}]}
+  end
   def playing({:call, from}, :pass, game) do
     {:keep_state, next_player(game), [{:reply, from, :ok}]}
   end
@@ -240,17 +288,18 @@ defmodule Zero.Game do
                  played_card) do
     player = {pid, code, cards -- [played_card]}
     %Game{game | shown: [played_card|game.shown],
-                 players: players ++ [player]}
+                 players: players ++ [player],
+                 can_pass: false}
   end
 
   defp next_player(%Game{players: [player|players]} = game) do
-    %Game{game | players: players ++ [player]}
+    %Game{game | players: players ++ [player], can_pass: false}
   end
 
   defp pick_card(%Game{players: [{player, code, cards}|players],
                        deck: [new_card|deck]} = game) do
     %Game{game | players: [{player, code, [new_card|cards]}|players],
-                 deck: deck}
+                 deck: deck, can_pass: true}
   end
 
   defp shown_card(%Game{deck: [card|deck]} = game) do

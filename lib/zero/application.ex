@@ -4,16 +4,17 @@ defmodule Zero.Application do
   @moduledoc false
 
   use Application
+  require Logger
 
   def start(_type, _args) do
     # List all child processes to be supervised
     children = [
-      # Starts a worker by calling: Zero.Worker.start_link(arg)
-      # {Zero.Worker, arg}
+      {Registry, keys: :unique, name: Zero.Game.Registry},
+      {DynamicSupervisor, strategy: :one_for_one, name: Zero.Games},
     ]
 
-    # See https://hexdocs.pm/elixir/Supervisor.html
-    # for other strategies and supported options
+    Logger.info "[app] initiated application"
+
     opts = [strategy: :one_for_one, name: Zero.Supervisor]
     Supervisor.start_link(children, opts)
   end
