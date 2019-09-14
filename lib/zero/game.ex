@@ -76,6 +76,7 @@ defmodule Zero.Game do
   def color?(name), do: call name, :color?
   def players(name), do: call name, :players
   def whose_turn_is_it?(name), do: call name, :whose_turn_is_it?
+  def deck_cards_num(name), do: call name, :deck_cards_num
 
   def stop(name) do
     EventManager.stop(name)
@@ -169,6 +170,10 @@ defmodule Zero.Game do
 
   def playing({:call, from}, :players_num, %Game{players: players}) do
     {:keep_state_and_data, [{:reply, from, length(players)}]}
+  end
+
+  def playing({:call, from}, :deck_cards_num, %Game{deck: deck}) do
+    {:keep_state_and_data, [{:reply, from, length(deck)}]}
   end
 
   def playing({:call, from}, :get_shown, %Game{shown: [card_shown|_]}) do

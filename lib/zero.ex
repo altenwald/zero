@@ -71,8 +71,8 @@ defmodule Zero do
         IO.puts "Zero Game - #{vsn()}"
         IO.puts "--------------------"
         draw_players(Game.players(name))
-        IO.puts "--------------------"
-        IO.puts "Shown --> (color: #{Game.color?(name)})"
+        IO.puts ["\nShown --> (color: ", print_color(Game.color?(name)), ")",
+                 "\nIn deck: #{Game.deck_cards_num(name)}\n"]
         draw_card(card)
         IO.puts "Your hand -->"
         cards = Game.get_hand(name)
@@ -85,6 +85,8 @@ defmodule Zero do
         end
     end
   end
+
+  defp print_color(color), do: [to_color(color), to_string(color), ANSI.reset]
 
   defp choose_option(name, user, cards) do
     case ask("[P]ass [G]et pla[Y] [Q]uit") do
@@ -111,7 +113,7 @@ defmodule Zero do
 
   defp wait_for_turn(name, user) do
     receive do
-      {:turn, ^user} ->
+      {:turn, _whatever_user} ->
         playing(name, user)
       {:game_over, _} ->
         :ok
