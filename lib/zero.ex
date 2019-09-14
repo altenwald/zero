@@ -78,22 +78,34 @@ defmodule Zero do
         cards = Game.get_hand(name)
         draw_cards(cards)
         if Game.is_my_turn?(name) do
-          case ask("[P]ass [G]et pla[Y]") do
-            "p" -> Game.pass(name)
-            "g" -> Game.pick_from_deck(name)
-            "y" ->
-              num = ask_num("card")
-              color = case Map.get(cards, num) do
-                {:special, _} -> get_color()
-                _ -> nil
-              end
-              Game.play(name, num, color)
-          end
-          playing(name, user)
+          choose_option(name, user, cards)
         else
           IO.puts "waiting for your turn..."
           wait_for_turn(name, user)
         end
+    end
+  end
+
+  defp choose_option(name, user, cards) do
+    case ask("[P]ass [G]et pla[Y] [Q]uit") do
+      "p" ->
+        Game.pass(name)
+        playing(name, user)
+      "g" ->
+        Game.pick_from_deck(name)
+        playing(name, user)
+      "y" ->
+        num = ask_num("card")
+        color = case Map.get(cards, num) do
+          {:special, _} -> get_color()
+          _ -> nil
+        end
+        Game.play(name, num, color)
+        playing(name, user)
+      "q" ->
+        :ok
+      _ ->
+        choose_option(name, user, cards)
     end
   end
 

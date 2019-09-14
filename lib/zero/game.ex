@@ -135,11 +135,13 @@ defmodule Zero.Game do
     players = case List.keyfind(players, code, 1) do
       nil ->
         players
-      {nil, code, cards} ->
+      {^player_pid, ^code, _cards} ->
+        players
+      {nil, ^code, cards} ->
         Process.monitor player_pid
         EventManager.notify(game.name, {:join, code})
         List.keyreplace(players, code, 1, {player_pid, code, cards})
-      {old_pid, code, cards} ->
+      {old_pid, ^code, cards} ->
         Process.exit old_pid, :kicked
         Process.monitor player_pid
         EventManager.notify(game.name, {:join, code})
