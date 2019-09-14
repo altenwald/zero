@@ -2,19 +2,32 @@ defmodule Zero.Game do
   use GenStateMachine, callback_mode: :state_functions
 
   @card_colors [:blue, :red, :yellow, :green]
-  @card_types [1, 2, 3, 4, 5, 6, 7, 8, 9, :reverse, :turn, :plus_2]
+  @card_types [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, :reverse, :turn, :plus_2]
   @special_cards [{:special, :plus_4},
                   {:special, :color_change}]
 
-  @inital_cards 5
+  @inital_cards 10
+  @max_num_players 7
+  @max_pick_from_deck 4
 
   alias Zero.{Game, EventManager}
+
+  @type name :: String.t
+
+  @type card :: {card_color, card_type}
+  @type card_color :: :blue | :red | :yellow | :green | :special
+  @type card_type :: 1..9 | :reverse | :turn | :plus_2 | :plus_4 | :color_change
+  @type cards :: [card]
+
+  @type player :: {pid, name, cards}
+  @type players :: [player]
 
   defstruct players: [],
             deck: [],
             shown: [],
             shown_color: nil,
             can_pass: false,
+            pick_from_deck: @max_pick_from_deck,
             name: nil
 
   def child_spec(init_args) do
@@ -71,10 +84,20 @@ defmodule Zero.Game do
 
   ## State: waiting for players
 
-  def waiting_players(:cast, {:join, player_pid, code}, game) do
-    Process.monitor player_pid
-    EventManager.notify(game.name, {:join, code})
-    {:keep_state, %Game{game | players: [{player_pid, code, []}|game.players]}}
+  def waiting_players(:cast, {:join, _, _}, %Game{players: players})
+      when length(players) > @max_num_players do
+    :keep_state_and_data
+  end
+  def waiting_players(:cast, {:join, player_pid, player_name}, game) do
+    case {List.keyfind(game.players, player_name, 1),
+          List.keyfind(game.players, player_pid, 0)} do
+      {nil, nil} ->
+        Process.monitor player_pid
+        EventManager.notify(game.name, {:join, player_name})
+        {:keep_state, %Game{game | players: [{player_pid, player_name, []}|game.players]}}
+      _ ->
+        :keep_state_and_data
+    end
   end
 
   def waiting_players(:cast, :deal, %Game{players: p}) when length(p) < 2 do
@@ -82,14 +105,16 @@ defmodule Zero.Game do
   end
   def waiting_players(:cast, :deal, game) do
     times = @inital_cards * length(game.players)
+    EventManager.notify(game.name, :dealing)
     give_card = fn(_, game) ->
+                  EventManager.notify(game.name, {:deal, player_name(game)})
                   game
                   |> pick_card()
                   |> next_player()
                 end
     game = List.foldl(Enum.to_list(1..times), game, give_card)
            |> shown_card()
-    EventManager.notify(game.name, :dealing)
+    EventManager.notify(game.name, :dealed)
     {:next_state, :playing, game}
   end
 
@@ -134,7 +159,7 @@ defmodule Zero.Game do
         :not_found
       {_pid, _code, cards} ->
         cards
-        |> Enum.with_index()
+        |> Enum.with_index(1)
         |> List.foldl(%{}, fn {v, k}, acc -> Map.put_new(acc, k, v) end)
     end
     {:keep_state_and_data, [{:reply, from, reply}]}
@@ -170,8 +195,8 @@ defmodule Zero.Game do
   end
 
   def playing({:call, from}, :players, %Game{players: players}) do
-    codes = for {_, code, _} <- players, do: code
-    {:keep_state_and_data, [{:reply, from, codes}]}
+    players = for {_, name, cards} <- players, do: {name, length(cards)}
+    {:keep_state_and_data, [{:reply, from, players}]}
   end
 
   def playing({:call, {player_pid, _} = from}, _action,
@@ -182,7 +207,7 @@ defmodule Zero.Game do
 
   def playing({:call, from}, {:play, num, _color},
               %Game{players: [{_, _, cards}|_]})
-      when length(cards) <= num or num < 0 do
+      when length(cards) < num or num <= 0 do
     {:keep_state_and_data, [{:reply, from, {:error, :invalid_number}}]}
   end
   def playing({:call, from}, {:play, _num, color}, _game)
@@ -192,8 +217,10 @@ defmodule Zero.Game do
   def playing({:call, from}, {:play, num, choosen_color},
               %Game{players: [{_pid, _code, cards}|_players],
                     shown: [{color, type}|_]} = game) do
-    played_card = Enum.at(cards, num)
+    played_card = Enum.at(cards, num - 1)
     if valid?(played_card, color, type, game.shown_color) do
+      num_cards = length(cards) - 1
+      EventManager.notify(game.name, {:cards, player_name(game), num_cards})
       game = game
              |> play_card(played_card)
              |> effects(played_card, choosen_color)
@@ -201,8 +228,7 @@ defmodule Zero.Game do
         EventManager.notify(game.name, {:game_over, who_wins?(game)})
         {:next_state, :ended, game, [{:reply, from, :ok}]}
       else
-        %Game{players: [{_, code, _}|_]} = game
-        EventManager.notify(game.name, {:turn, code})
+        EventManager.notify(game.name, {:turn, player_name(game)})
         {:keep_state, game, [{:reply, from, :ok}]}
       end
     else
@@ -210,8 +236,13 @@ defmodule Zero.Game do
     end
   end
 
-  def playing({:call, from}, :pick_from_deck, %Game{deck: []}) do
-    {:keep_state_and_data, [{:reply, from, {:error, :empty_deck}}]}
+  def playing({:call, from}, :pick_from_deck, %Game{deck: []} = game) do
+    EventManager.notify(game.name, {:game_over, who_wins?(game)})
+    {:next_state, :ended, [{:reply, from, :game_over}]}
+  end
+  def playing({:call, from}, :pick_from_deck,
+              %Game{pick_from_deck: 0}) do
+    {:keep_state_and_data, [{:reply, from, {:error, :max_pick_from_deck}}]}
   end
   def playing({:call, from}, :pick_from_deck, game) do
     %Game{players: [{_, code, _}|_]} = game
@@ -266,31 +297,40 @@ defmodule Zero.Game do
 
   defp who_wins?(%Game{players: players}) do
     players
-    |> Enum.filter(fn({_pid, _code, cards}) -> cards == [] end)
+    |> Enum.map(fn({_pid, code, cards}) -> {length(cards), code} end)
+    |> Enum.sort()
     |> hd()
     |> elem(1)
   end
 
+  defp player_name(%Game{players: [{_, name, _}|_]}), do: name
+
   defp effects(game, {_color, :plus_2}, _choosen_color) do
-    game
+    EventManager.notify(game.name, {:plus_2, player_name(game)})
+    %Game{game | pick_from_deck: @max_pick_from_deck + 2}
     |> pick_card()
     |> pick_card()
   end
   defp effects(game, {:special, :plus_4}, choosen_color) do
-    %Game{game | shown_color: choosen_color}
+    EventManager.notify(game.name, {:plus_4, player_name(game)})
+    %Game{game | shown_color: choosen_color,
+                 pick_from_deck: @max_pick_from_deck + 4}
     |> pick_card()
     |> pick_card()
     |> pick_card()
     |> pick_card()    
   end
   defp effects(game, {:special, :color_change}, choosen_color) do
+    EventManager.notify(game.name, {:color_change, choosen_color})
     %Game{game | shown_color: choosen_color}
   end
   defp effects(game, {_color, :reverse}, _choosen_color) do
+    EventManager.notify(game.name, :reverse)
     [player|players] = Enum.reverse(game.players)
     %Game{game | players: players ++ [player]}
   end
   defp effects(game, {_color, :turn}, _choosen_color) do
+    EventManager.notify(game.name, {:lose_turn, player_name(game)})
     next_player(game)
   end
   defp effects(game, _played_card, _choosen_color), do: game
@@ -300,19 +340,26 @@ defmodule Zero.Game do
     player = {pid, code, cards -- [played_card]}
     %Game{game | shown: [played_card|game.shown],
                  players: players ++ [player],
-                 can_pass: false}
+                 can_pass: false,
+                 pick_from_deck: @max_pick_from_deck}
   end
 
   defp next_player(%Game{players: [player|players]} = game) do
-    %Game{game | players: players ++ [player], can_pass: false}
+    %Game{game | players: players ++ [player],
+                 can_pass: false,
+                 pick_from_deck: @max_pick_from_deck}
   end
 
   defp pick_card(%Game{players: [{player, code, cards}|players],
                        deck: [new_card|deck]} = game) do
     %Game{game | players: [{player, code, [new_card|cards]}|players],
-                 deck: deck, can_pass: true}
+                 deck: deck, can_pass: true,
+                 pick_from_deck: game.pick_from_deck - 1}
   end
 
+  defp shown_card(%Game{deck: [{:special, _} = card|deck]} = game) do
+    shown_card(%Game{game | deck: deck ++ [card]})
+  end
   defp shown_card(%Game{deck: [card|deck]} = game) do
     %Game{game | shown: [card|game.shown], deck: deck}
   end

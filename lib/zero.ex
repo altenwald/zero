@@ -38,9 +38,13 @@ defmodule Zero do
   def handle_events(events, _from, game) do
     for event <- events do
       case event do
-        {:join, name} -> IO.puts "event: join #{name}"
-        {:game_over, winner} -> IO.puts "\nG A M E   O V E R\n\n#{winner} WINS!!!"
-        _ -> send game, event
+        {:join, name} ->
+          IO.puts "event: join #{name}"
+        {:game_over, winner} ->
+          IO.puts "\nG A M E   O V E R\n\n#{winner} WINS!!!"
+          send game, event
+        _ ->
+          send game, event
       end
     end
     {:noreply, [], game}
@@ -58,13 +62,15 @@ defmodule Zero do
     end
   end
 
-  def playing(name, user) do
+  def playing(name \\ __MODULE__, user) do
     case Game.get_shown(name) do
       :game_over ->
         IO.puts "GAME OVER!"
       card ->
         IO.puts [ANSI.reset(), ANSI.clear()]
         IO.puts "Zero Game - #{vsn()}"
+        IO.puts "--------------------"
+        draw_players(Game.players(name))
         IO.puts "--------------------"
         IO.puts "Shown --> (color: #{Game.color?(name)})"
         draw_card(card)
@@ -95,6 +101,8 @@ defmodule Zero do
     receive do
       {:turn, ^user} ->
         playing(name, user)
+      {:game_over, _} ->
+        :ok
       other ->
         IO.puts("event: #{inspect other}")
         wait_for_turn(name, user)
@@ -127,6 +135,26 @@ defmodule Zero do
   defp to_type(:plus_2), do: "+ 2"
   defp to_type(:plus_4), do: "+ 4"
   defp to_type(:color_change), do: "COL"
+
+  defp draw_players(players) do
+    [
+      "+----------------------+-----+\n",
+      for {name, cards_num} <- players do
+        [
+          "| ",
+          name
+          |> String.slice(0..19)
+          |> String.pad_trailing(20),
+          " | ",
+          cards_num
+          |> to_string()
+          |> String.pad_leading(3),
+          " |\n"
+        ]
+      end,
+      "+----------------------+-----+",
+    ] |> IO.puts()
+  end
 
   defp draw_card({color, type}) do
     color = to_color(color)
