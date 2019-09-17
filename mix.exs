@@ -29,6 +29,9 @@ defmodule Zero.MixProject do
       {:plug_cowboy, "~> 2.0"},
       {:etag_plug, "~> 0.2.0"},
       {:eqrcode, "~> 0.1.6"},
+
+      # for releases
+      {:distillery, "~> 2.0"},
     ]
   end
 end
