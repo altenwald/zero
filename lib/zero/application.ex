@@ -10,7 +10,7 @@ defmodule Zero.Application do
 
   def start(_type, _args) do
     # List all child processes to be supervised
-    port_number = Application.get_env(:leprechaun, :port, @port)
+    port_number = Application.get_env(:zero, :port, @port)
 
     children = [
       {Registry, keys: :unique, name: Zero.Game.Registry},
