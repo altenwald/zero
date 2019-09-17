@@ -24,6 +24,11 @@ defmodule Zero.MixProject do
     [
       {:gen_state_machine, "~> 2.0"},
       {:gen_stage, "~> 0.14"},
+      {:uuid, "~> 1.1"},
+      {:jason, "~> 1.1"},
+      {:plug_cowboy, "~> 2.0"},
+      {:etag_plug, "~> 0.2.0"},
+      {:eqrcode, "~> 0.1.6"},
     ]
   end
 end

@@ -1,0 +1,60 @@
+table#juego tr td,
+table#juego tr th {
+    border: solid 1px black;
+    padding: 5px;
+    margin: 0;
+    text-align: center;
+}
+table#juego {
+    display: inline;
+}
+table#juego tr td.rojo {
+    color: red;
+    background-color: blue;
+}
+table#juego tr td.amarillo {
+    color: yellow;
+    background-color: blue;
+}
+table#juego tr td.vacio {
+    color: darkblue;
+    background-color: blue;
+}
+.blink_me {
+    animation: blinker 1s linear infinite;
+}
+
+@keyframes blinker {  
+    50% { opacity: 0; }
+}
+
+td.tile1 {
+    background-color: #ddd;
+}
+td.tile2 {
+    background-color: #fff;
+}
+.fas, .far {
+    font-size: 25px;
+}
+
+.card,
+#card-shown {
+    width: 75px;
+}
+#game-hand-cards img {
+    width: 75px;
+    display: inline-block;
+}
+#game-shown {
+    text-align: center;
+}
+ul#log {
+    border: 1px solid;
+    padding: 5px;
+    width: 100%;
+    height: 500px;
+    font-family: 'Courier New', Courier, monospace;
+    list-style: none;
+    text-align: left;
+}

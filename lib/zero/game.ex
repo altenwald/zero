@@ -10,6 +10,8 @@ defmodule Zero.Game do
   @max_num_players 7
   @max_pick_from_deck 4
 
+  @ended_timeout 120_000
+
   alias Zero.{Game, EventManager}
 
   @type name :: String.t
@@ -77,6 +79,7 @@ defmodule Zero.Game do
   def players(name), do: call name, :players
   def whose_turn_is_it?(name), do: call name, :whose_turn_is_it?
   def deck_cards_num(name), do: call name, :deck_cards_num
+  def restart(name), do: cast name, :restart
 
   def stop(name) do
     EventManager.stop(name)
@@ -105,17 +108,7 @@ defmodule Zero.Game do
     :keep_state_and_data
   end
   def waiting_players(:cast, :deal, game) do
-    times = @inital_cards * length(game.players)
-    EventManager.notify(game.name, :dealing)
-    give_card = fn(_, game) ->
-                  EventManager.notify(game.name, {:deal, player_name(game)})
-                  game
-                  |> pick_card()
-                  |> next_player()
-                end
-    game = List.foldl(Enum.to_list(1..times), game, give_card)
-           |> shown_card()
-    EventManager.notify(game.name, :dealed)
+    game = give_cards(game)
     {:next_state, :playing, game}
   end
 
@@ -123,11 +116,20 @@ defmodule Zero.Game do
     {:keep_state_and_data, [{:reply, from, length(players)}]}
   end
 
+  def waiting_players({:call, from}, :players, %Game{players: players}) do
+    players = for {_, name, cards} <- players, do: {name, length(cards)}
+    {:keep_state_and_data, [{:reply, from, players}]}
+  end
+
   def waiting_players(:info, {:DOWN, _ref, :process, player_pid, _reason},
                       %Game{players: players} = game) do
     {_, code, _} = player = List.keyfind(players, player_pid, 0)
     EventManager.notify(game.name, {:disconnected, code})
     {:keep_state, %Game{game | players: players -- [player]}}
+  end
+
+  def waiting_players(:cast, :restart, _game) do
+    :keep_state_and_data
   end
 
   ## State: playing
@@ -151,7 +153,8 @@ defmodule Zero.Game do
     {:keep_state, %Game{game | players: players}}
   end
 
-  def playing(:cast, :deal, _game) do
+  def playing(:cast, :deal, game) do
+    EventManager.notify(game.name, :dealt)
     :keep_state_and_data
   end
 
@@ -233,7 +236,9 @@ defmodule Zero.Game do
              |> effects(played_card, choosen_color)
       if game_ends?(game) do
         EventManager.notify(game.name, {:game_over, who_wins?(game)})
-        {:next_state, :ended, game, [{:reply, from, :ok}]}
+        actions = [{:reply, from, :ok},
+                   {:state_timeout, @ended_timeout, :terminate}]
+        {:next_state, :ended, game, actions}
       else
         EventManager.notify(game.name, {:turn, player_name(game)})
         {:keep_state, game, [{:reply, from, :ok}]}
@@ -252,8 +257,7 @@ defmodule Zero.Game do
     {:keep_state_and_data, [{:reply, from, {:error, :max_pick_from_deck}}]}
   end
   def playing({:call, from}, :pick_from_deck, game) do
-    %Game{players: [{_, code, _}|_]} = game
-    EventManager.notify(game.name, {:pick_from_deck, code})
+    EventManager.notify(game.name, {:pick_from_deck, player_name(game)})
     {:keep_state, pick_card(game), [{:reply, from, :ok}]}
   end
 
@@ -280,7 +284,18 @@ defmodule Zero.Game do
     {:keep_state, %Game{game | players: players}}
   end
 
+  def playing(:cast, :restart, _game) do
+    :keep_state_and_data
+  end
+
   ## State: ended
+
+  def ended(:cast, :restart, game) do
+    game = game
+           |> Map.put(:deck, shuffle_cards())
+           |> give_cards()
+    {:next_state, :playing, game}
+  end
 
   def ended(:cast, _msg, _game), do: :keep_state_and_data
 
@@ -290,7 +305,27 @@ defmodule Zero.Game do
 
   def ended(:info, _msg, _game), do: :keep_state_and_data
 
+  def ended(:timeout, :terminate, _game), do: :stop
+
   ## Internal functions
+
+  defp give_cards(game) do
+    times = @inital_cards * length(game.players)
+    EventManager.notify(game.name, :dealing)
+    players = Enum.map(game.players,
+                       fn {pid, name, _} -> {pid, name, []} end)
+    game = %Game{game | players: players}
+    give_card = fn(_, game) ->
+                  EventManager.notify(game.name, {:deal, player_name(game)})
+                  game
+                  |> pick_card()
+                  |> next_player()
+                end
+    game = List.foldl(Enum.to_list(1..times), game, give_card)
+           |> shown_card()
+    EventManager.notify(game.name, :dealt)
+    game
+  end
 
   defp valid?({:special, _}, _color, _type, _choosen_color), do: true
   defp valid?({color, _}, :special, _type, color), do: true

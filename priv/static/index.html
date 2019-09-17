@@ -1,0 +1,183 @@
+<html lang="es">
+<head>
+    <meta charset="utf-8"/>
+    <title>Zero Game</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta name="description" content="Zero Game">
+    <meta name="author" content="Altenwald Solutions, S.L.">
+    <link rel="stylesheet"
+          href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/css/bootstrap.min.css"
+          integrity="sha384-MCw98/SFnGE8fJT3GXwEOngsV7Zt27NXFoaoApmYm81iuXoPkFOJwJ8ERdknLPMO"
+          crossorigin="anonymous">
+    <script src="https://code.jquery.com/jquery-3.3.1.min.js"
+            integrity="sha256-FgpCb/KJQlLNfOu91ta32o/NMZxltwRo8QtmkMRdAu8="
+            crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.3/umd/popper.min.js"
+            integrity="sha384-ZMP7rVo3mIykV+2+9J3UJ46jBk0WLaUAdn689aCwoqbBJiSnjAK/l8WvCWPIPm49"
+            crossorigin="anonymous"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/js/bootstrap.min.js"
+            integrity="sha384-ChfqqxuZUCnJSK3+MXmPNIyE6ZbWh2IMqE241rYiqJxyMiZ6OW/JmZQ5stwEULTy"
+            crossorigin="anonymous"></script>
+    <link rel="stylesheet" type="text/css" href="/css/app.css"/>
+    <script type="text/javascript" src="/js/index.js"></script>
+    <!-- Global site tag (gtag.js) - Google Analytics -->
+    <!-- <script async src="https://www.googletagmanager.com/gtag/js?id=UA-6954758-10"></script>
+    <script type="text/javascript" src="/js/google_analytics.js"></script> -->
+    <!-- Go to www.addthis.com/dashboard to customize your tools -->
+    <!-- <script type="text/javascript" src="//s7.addthis.com/js/300/addthis_widget.js#pubid=ra-5cad355f0a4ac15b"></script> -->
+    <script src="https://kit.fontawesome.com/7d70bbec1c.js"></script>
+</head>
+<body>
+    <div class="d-flex flex-column flex-md-row align-items-center p-3 px-md-4 mb-3 bg-white border-bottom shadow-sm">
+      <h5 class="my-0 mr-md-auto font-weight-normal">Zero Game <span id="vsn"></span></h5>
+    </div>
+    <div class="container text-center">
+      <a id="game-pick" class="btn btn-outline-info" href="#">
+        <i class="fas fa-hand-lizard"></i>
+      </a>
+      <a id="game-pass" class="btn btn-outline-info" href="#">
+        <i class="fas fa-hand-paper"></i>
+      </a>
+      <a id="game-howtoplay" class="btn btn-outline-primary" href="#" data-toggle="modal" data-target="#howToPlayModal">
+        <i class="fas fa-life-ring"></i>
+      </a>
+      <a id="game-restart" class="btn btn-outline-danger" href="#">
+        <i class="fas fa-sync"></i>
+      </a>
+      <div id="game-deck">Cards in Deck: <span>110</span></div>
+      <div id="game-msg">
+        <strong>Waiting for players...</strong>
+      </div>
+      <div class="container">
+        <div id="game-hand">
+          <h2>Your cards</h2>
+          <div id="game-hand-cards">
+            <img id="card-1" class="card" src="/img/cards/green0.png"/>
+            <img id="card-2" class="card" src="/img/cards/red1.png"/>
+            <img id="card-3" class="card" src="/img/cards/yellow2.png"/>
+            <img id="card-4" class="card" src="/img/cards/blue3.png"/>
+            <img id="card-5" class="card" src="/img/cards/green4.png"/>
+          </div>
+        </div>
+        <div class="row">
+          <div class="col-sm-4" id="game-shown">
+            <h2>Shown</h2>
+            <div id="game-color">Color: <span>blue</span></div>
+            <img id="card-shown" src="/img/cards/blue0.png"/>
+          </div>
+          <div class="col-sm-8" id="game-players">
+            <h2>Players</h2>
+            <table class="table table-sm">
+              <thead class="thead-light">
+                <tr>
+                  <th>Player</th>
+                  <th>Cards</th>
+                </tr>
+              </thead>
+              <tbody id="list-players">
+                <tr class="table-success" id="player-1">
+                  <td>manuel</td>
+                  <td>10</td>
+                </tr>
+                <tr>
+                  <td>mike</td>
+                  <td>10</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div class="row justify-content-md-center">
+          <ul id="log"></ul>
+        </div>
+      </div>
+    </div>
+    <div class="modal" id="changeColorModal" tabindex="-1" role="dialog" aria-labelledby="changeColorLabel" aria-hidden="true">
+      <div class="model-dialog" role="document">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="onBoardingLabel">Choose Color</h5>
+          </div>
+          <div class="modal-body">
+            <div class="form-group">
+              <div class="form-check">
+                <input class="form-check-input" type="radio" name="color" id="color-green" value="green" checked>
+                <label class="form-check-label" for="color-green">Green</label>
+              </div>
+              <div class="form-check">
+                <input class="form-check-input" type="radio" name="color" id="color-blue" value="blue" checked>
+                <label class="form-check-label" for="color-blue">Blue</label>
+              </div>
+              <div class="form-check">
+                <input class="form-check-input" type="radio" name="color" id="color-red" value="red" checked>
+                <label class="form-check-label" for="color-red">Red</label>
+              </div>
+              <div class="form-check">
+                <input class="form-check-input" type="radio" name="color" id="color-yellow" value="yellow" checked>
+                <label class="form-check-label" for="color-yellow">Yellow</label>
+              </div>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button id="chooseColor" type="button" class="btn btn-primary">Choose</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="modal" id="onBoardingModal" tabindex="-1" role="dialog" aria-labelledby="onBoardingLabel" aria-hidden="true">
+      <div class="model-dialog" role="document">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="onBoardingLabel">Play</h5>
+          </div>
+          <div class="modal-body">
+            <div class="form-group">
+              <input type="text" class="form-control" id="username" placeholder="Name">
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button id="join" type="button" class="btn btn-primary">Join</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="modal" id="dealingModal" tabindex="-1" role="dialog" aria-labelledby="dealingLabel" aria-hidden="true">
+      <div class="model-dialog" role="document">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="onBoardingLabel">Play</h5>
+          </div>
+          <div class="modal-body">
+            <p>Press deal button when all of the players are on board! Players:</p>
+            <ul id="modal-players">
+            </ul>
+            <p>Share: <a id="modal-players-url" href=""></a></p>
+            <img src="" width="100px" id="modal-players-url-img">
+          </div>
+          <div class="modal-footer">
+            <button id="deal" type="button" class="btn btn-primary">Deal</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="modal" id="howToPlayModal" tabindex="-1"  role="dialog" aria-labelledby="howToPlayLabel" aria-hidden="true">
+      <div class="modal-dialog" role="document">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="howToPlayLabel">How to Play</h5>
+          </div>
+          <div class="modal-body">
+            <p>If you want to make suggestions or obtain the source code you can go to <a href="https://github.com/altenwald/zero">Github site</a> and create a issue, fork the code to send us modifications or fixes or whatever.</p>
+            <p>In the same way we will be pleased receiving donations:</p>
+            <a target="_blank" href="https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=RC5F8STDA6AXE"><img src="https://www.paypalobjects.com/en_US/GB/i/btn/btn_donateCC_LG.gif" alt="paypal"></a>
+            <p>Thanks! and Enjoy!</p>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <footer class="footer">&nbsp;</footer>
+  </body>
+</html>
