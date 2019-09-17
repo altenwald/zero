@@ -9,8 +9,8 @@ defmodule Zero.Websocket do
     {:consumer, game, subscribe_to: [producer]}
   end
 
-  def handle_info({:DOWN, _ref, :process, _pid, _reason}, _state) do
-    :stop
+  def handle_info({:DOWN, _ref, :process, _pid, _reason}, state) do
+    {:stop, :normal, state}
   end
 
   def handle_events(events, _from, game) do
