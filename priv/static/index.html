@@ -92,11 +92,28 @@
         </div>
       </div>
     </div>
+    <div class="modal" id="gameOverModal" tabindex="-1" role="dialog" aria-labelledby="gameOverLabel" aria-hidden="true">
+      <div class="model-dialog" role="document">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="gameOverLabel">Game Over</h5>
+          </div>
+          <div class="modal-body">
+            <p><strong id="game-over-msg"></strong></p>
+            <p>You can now <strong>Restart</strong> the game to play again against the same users or start a completely <strong>New One</strong> match. What do you want to do?</p>
+          </div>
+          <div class="modal-footer">
+            <button id="game-over-new" type="button" class="btn btn-success">New One</button>
+            <button id="game-over-restart" type="button" class="btn btn-primary">Restart</button>
+          </div>
+        </div>
+      </div>
+    </div>
     <div class="modal" id="changeColorModal" tabindex="-1" role="dialog" aria-labelledby="changeColorLabel" aria-hidden="true">
       <div class="model-dialog" role="document">
         <div class="modal-content">
           <div class="modal-header">
-            <h5 class="modal-title" id="onBoardingLabel">Choose Color</h5>
+            <h5 class="modal-title" id="changeColorLabel">Choose Color</h5>
           </div>
           <div class="modal-body">
             <div class="form-group">
@@ -119,6 +136,7 @@
             </div>
           </div>
           <div class="modal-footer">
+            <button id="chooseColorCancel" type="button" class="btn btn-default">Cancel</button>
             <button id="chooseColor" type="button" class="btn btn-primary">Choose</button>
           </div>
         </div>

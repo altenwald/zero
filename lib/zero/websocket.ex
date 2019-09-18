@@ -69,23 +69,60 @@ defmodule Zero.Websocket do
     {:reply, {:text, Jason.encode!(msg)}, state}
   end
 
-  def websocket_info(:dealt, %{name: name} = state) do
-    msg = send_update_msg(name)
+  def websocket_info(:dealt, state) do
+    msg = send_update_msg("dealt", state.name)
     {:reply, {:text, Jason.encode!(msg)}, state}
   end
 
-  def websocket_info({:turn, _username}, %{name: name} = state) do
-    msg = send_update_msg(name)
+  def websocket_info({:turn, _username, previous}, state) do
+    msg = send_update_msg("turn", state.name)
+          |> Map.put("previous", previous)
     {:reply, {:text, Jason.encode!(msg)}, state}
   end
 
-  def websocket_info({:pick_from_deck, _username}, %{name: name} = state) do
-    msg = send_update_msg(name)
+  def websocket_info({:pick_from_deck, _username}, state) do
+    msg = send_update_msg("pick_from_deck", state.name)
     {:reply, {:text, Jason.encode!(msg)}, state}
   end
 
   def websocket_info({:game_over, winner}, state) do
     msg = %{"type" => "gameover", "winner" => winner}
+    {:reply, {:text, Jason.encode!(msg)}, state}
+  end
+
+  def websocket_info({:pass, player_name}, state) do
+    msg = send_update_msg("pass", state.name)
+          |> Map.put("previous", player_name)
+    {:reply, {:text, Jason.encode!(msg)}, state}
+  end
+
+  def websocket_info({:plus_2, _username, previous}, state) do
+    msg = send_update_msg("plus_2", state.name)
+          |> Map.put("previous", previous)
+    {:reply, {:text, Jason.encode!(msg)}, state}
+  end
+
+  def websocket_info({:plus_4, _username, previous}, state) do
+    msg = send_update_msg("plus_4", state.name)
+          |> Map.put("previous", previous)
+    {:reply, {:text, Jason.encode!(msg)}, state}
+  end
+
+  def websocket_info({:lose_turn, username, previous}, state) do
+    msg = send_update_msg("lose_turn", state.name)
+          |> Map.put("previous", previous)
+          |> Map.put("skipped", username)
+    {:reply, {:text, Jason.encode!(msg)}, state}
+  end
+
+  def websocket_info({:change_color, _username}, state) do
+    msg = send_update_msg("change_color", state.name)
+    {:reply, {:text, Jason.encode!(msg)}, state}
+  end
+
+  def websocket_info({:reverse, username}, state) do
+    msg = send_update_msg("reverse", state.name)
+          |> Map.put("previous", username)
     {:reply, {:text, Jason.encode!(msg)}, state}
   end
 
@@ -99,8 +136,8 @@ defmodule Zero.Websocket do
     :ok
   end
 
-  defp send_update_msg(name) do
-    %{"type" => "dealt",
+  defp send_update_msg(event, name) do
+    %{"type" => event,
       "hand" => get_cards(Game.get_hand(name)),
       "shown" => get_card(Game.get_shown(name)),
       "shown_color" => to_string(Game.color?(name)),
@@ -147,7 +184,7 @@ defmodule Zero.Websocket do
       {:ok, %{state | name: name}}
     else
       Logger.warn "doesn't exist #{inspect name}"
-      msg = %{"type" => "gameover", "error" => true}
+      msg = %{"type" => "notfound", "error" => true}
       {:reply, {:text, Jason.encode!(msg)}, state}
     end  
   end

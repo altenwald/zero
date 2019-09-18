@@ -113,7 +113,7 @@ defmodule Zero do
 
   defp wait_for_turn(name, user) do
     receive do
-      {:turn, _whatever_user} ->
+      {:turn, _whatever_user, _previous_one} ->
         playing(name, user)
       {:game_over, _} ->
         :ok
