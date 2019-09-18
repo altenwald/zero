@@ -78,6 +78,12 @@ defmodule Zero.Game do
   def whose_turn_is_it?(name), do: call name, :whose_turn_is_it?
   def deck_cards_num(name), do: call name, :deck_cards_num
   def restart(name), do: cast name, :restart
+  def valid_name?(name, username), do: call name, {:valid_name?, username}
+
+  def get_pid(game) do
+    [{pid, _}] = Registry.lookup(Zero.Game.Registry, game)
+    pid
+  end
 
   def stop(name) do
     EventManager.stop(name)
@@ -129,6 +135,12 @@ defmodule Zero.Game do
   def waiting_players({:call, from}, :players, %Game{players: players}) do
     players = for {_, name, cards} <- players, do: {name, length(cards)}
     {:keep_state_and_data, [{:reply, from, players}]}
+  end
+
+  def waiting_players({:call, from}, {:valid_name?, username}, game) do
+    reply = not Enum.any?(game.players, fn {_, ^username, _} -> true
+                                           {_, _, _} -> false end)
+    {:keep_state_and_data, [{:reply, from, reply}]}
   end
 
   def waiting_players(:info, {:DOWN, _ref, :process, player_pid, _reason},

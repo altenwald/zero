@@ -41,9 +41,6 @@
       <a id="game-howtoplay" class="btn btn-outline-primary" href="#" data-toggle="modal" data-target="#howToPlayModal">
         <i class="fas fa-life-ring"></i>
       </a>
-      <a id="game-restart" class="btn btn-outline-danger" href="#">
-        <i class="fas fa-sync"></i>
-      </a>
       <div id="game-deck">Cards in Deck: <span>110</span></div>
       <div id="game-msg">
         <strong>Waiting for players...</strong>
@@ -171,7 +168,11 @@
             </ul>
             <p>Share: <a id="modal-players-url" href=""></a></p>
             <img src="" width="100px" id="modal-players-url-img">
-          </div>
+            <div class="input-group">
+                <input type="text" class="form-control" id="bot-name" placeholder="Bot Name">
+                <button type="button" class="btn btn-default" id="bot-add">Add Bot</button>
+              </div>
+            </div>
           <div class="modal-footer">
             <button id="deal" type="button" class="btn btn-primary">Deal</button>
           </div>

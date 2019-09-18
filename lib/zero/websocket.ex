@@ -1,6 +1,6 @@
 defmodule Zero.Websocket do
   require Logger
-  alias Zero.{Game, EventManager}
+  alias Zero.{Game, EventManager, Bot}
 
   use GenStage
 
@@ -212,6 +212,13 @@ defmodule Zero.Websocket do
   end
   defp process_data(%{"type" => "restart"}, state) do
     Game.restart(state.name)
+    {:ok, state}
+  end
+  defp process_data(%{"type" => "bot", "name" => botname}, state) do
+    botname = String.trim(botname)
+    if Game.valid_name?(state.name, botname) do
+      Bot.start_link(state.name, botname)
+    end
     {:ok, state}
   end
 end

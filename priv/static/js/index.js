@@ -310,6 +310,9 @@ $(document).ready(function(){
         send({type: "restart"});
         $("#gameOverModal").modal('hide');
     });
+    $("#bot-add").on("click", function(){
+        send({type: "bot", name: $("#bot-name").val()});
+    });
 });
 
 // from: https://gist.github.com/hagemann/382adfc57adbd5af078dc93feef01fe1#file-slugify-js
