@@ -10,7 +10,9 @@ defmodule Zero.Game do
   @max_num_players 7
   @max_pick_from_deck 4
 
-  @ended_timeout 120_000
+  @max_menu_time 3_600_000
+  @max_game_time 21_600_000
+  @max_ended_time 1_800_000
 
   alias Zero.{Game, EventManager}
 
@@ -86,7 +88,12 @@ defmodule Zero.Game do
   def init([name]) do
     EventManager.start_link(name)
     game = %Game{deck: shuffle_cards(), name: name}
-    {:ok, :waiting_players, game}
+    {:ok, :waiting_players, game, [{:state_timeout, @max_menu_time, :game_over}]}
+  end
+
+  @impl true
+  def code_change(_old_vsn, state_name, state_data, _extra) do
+    {:ok, state_name, state_data}
   end
 
   ## State: waiting for players
@@ -112,7 +119,7 @@ defmodule Zero.Game do
   end
   def waiting_players(:cast, :deal, game) do
     game = give_cards(game)
-    {:next_state, :playing, game}
+    {:next_state, :playing, game, [{:state_timeout, @max_game_time, :game_over}]}
   end
 
   def waiting_players({:call, from}, :players_num, %Game{players: players}) do
@@ -239,7 +246,7 @@ defmodule Zero.Game do
       if game_ends?(game) do
         EventManager.notify(game.name, {:game_over, who_wins?(game)})
         actions = [{:reply, from, :ok},
-                   {:state_timeout, @ended_timeout, :terminate}]
+                   {:state_timeout, @max_ended_time, :terminate}]
         {:next_state, :ended, game, actions}
       else
         EventManager.notify(game.name, {:turn, player_name(game), player_name})
@@ -252,7 +259,9 @@ defmodule Zero.Game do
 
   def playing({:call, from}, :pick_from_deck, %Game{deck: []} = game) do
     EventManager.notify(game.name, {:game_over, who_wins?(game)})
-    {:next_state, :ended, [{:reply, from, :game_over}]}
+    actions = [{:reply, from, :gameover},
+               {:state_timeout, @max_ended_time, :terminate}]
+    {:next_state, :ended, actions}
   end
   def playing({:call, from}, :pick_from_deck,
               %Game{pick_from_deck: 0}) do
@@ -296,7 +305,7 @@ defmodule Zero.Game do
     game = game
            |> Map.put(:deck, shuffle_cards())
            |> give_cards()
-    {:next_state, :playing, game}
+    {:next_state, :playing, game, [{:state_timeout, @max_game_time, :game_over}]}
   end
 
   def ended(:cast, _msg, _game), do: :keep_state_and_data
