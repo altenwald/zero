@@ -462,6 +462,7 @@ defmodule Zero.Game do
                  pick_from_deck: @max_pick_from_deck}
   end
 
+  defp pick_card(%Game{deck: []} = game), do: game
   defp pick_card(%Game{players: [{player, name, cards}|players],
                        deck: [new_card|deck]} = game) do
     %Game{game | players: [{player, name, [new_card|cards]}|players],
