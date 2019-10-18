@@ -100,12 +100,14 @@ function connect() {
                     update_deck(data.deck);
                 }
                 break;
-            case "gameover":
+            case "game_over":
                 if (data.winner == username) {
                     $("#game-over-msg").html("You win!!!");
                 } else {
-                    $("#game-over-msg").html("You loose :'(");
+                    $("#game-over-msg").html("You loose :'( ... " + data.winner + " won!");
                 }
+                update_shown_card(data);
+                update_players_table(data.players, data.turn);
                 $("#gameOverModal").modal('show');
                 break;
             case "notfound":
@@ -215,22 +217,28 @@ function update_shown_card(data) {
 
 function update_hand(hand) {
     html = hand.reduce(function(acc, card) {
-        if (card[0] == "special") {
-            return [acc[0] + 1, acc[1] + "<img src='" + card[1] + "' id='play-" + acc[0] + "' class='card special'/>"];
-        }
-        return [acc[0] + 1, acc[1] + "<img src='" + card[1] + "' id='play-" + acc[0] + "' class='card'/>"];
+        return [acc[0] + 1, acc[1] + "<img src='" + card[1] + "' id='play-" + acc[0] + "' class='card card-" + card[0] + "'/>"];
     }, [1, ""]);
     $("#game-hand-cards").html(html[1]);
     refresh_hand = false;
     $(".card").on("click", function(){
         card = parseInt($(this).attr("id").split("-")[1]);
-        if ($(this)[0].classList.contains("special")) {
+        if ($(this)[0].classList.contains("card-special")) {
             $("#changeColorModal").modal('show');
+            update_colors();
         } else {
             refresh_hand = true;
             send({type: "play", card: card, color: "red"});
         }
     });
+}
+
+function update_colors() {
+    var colors = ["green", "blue", "red", "yellow"];
+    for (var i=0, color=colors[0]; i<colors.length; color=colors[++i]) {
+        var amount = $(".card-" + color).length;
+        $("#color-card-" + color + "-count").html(amount);
+    }
 }
 
 function update_deck(deck) {
@@ -248,6 +256,11 @@ function update_game(data) {
 function update_player(username) {
     var slug = slugify(username);
     $("#modal-players").append("<li id='" + slug + "'>" + username + "</li>");
+    if ($("#modal-players li").length >= 2) {
+        $("#deal").removeClass("disabled");
+    } else {
+        $("#deal").addClass("disabled");
+    }
 }
 
 function clear_player(username) {
@@ -277,7 +290,15 @@ function set_game_id(id) {
 
 $(document).ready(function(){
     connect();
+    $("#username").on("keydown", function(event) {
+        var keyCode = event.keyCode || event.which;
+        if (keyCode == 13) {
+            $("#join").trigger("click");
+            return false;
+        }
+    });
     $("#join").on("click", function(event) {
+        event.preventDefault();
         var user = $("#username").val();
         $("#onBoardingModal").modal('hide');
         $("#dealingModal").modal('show');
@@ -285,33 +306,49 @@ $(document).ready(function(){
         send({type: "join", name: game_id, username: user});
     });
     $("#deal").on("click", function(event) {
+        event.preventDefault();
         send({type: "deal"});
     });
     $("#game-pick").on("click", function(event) {
+        event.preventDefault();
         send({type: "pick-from-deck"});
     });
     $("#game-pass").on("click", function(event) {
+        event.preventDefault();
         send({type: "pass"});
     });
-    $("#chooseColor").on("click", function(){
-        var color = $("input:radio[name=color]:checked").val();
+    $(".color-card").on("click", function(event){
+        event.preventDefault();
+        var color = $(this).attr('id').split("-")[2];
         refresh_hand = true;
         send({type: "play", card: card, color: color});
         $("#changeColorModal").modal('hide');
     });
-    $("#chooseColorCancel").on("click", function(){
+    $("#chooseColorCancel").on("click", function(event){
+        event.preventDefault();
         $("#changeColorModal").modal('hide');
     });
-    $("#game-over-new").on("click", function(){
+    $("#game-over-new").on("click", function(event){
+        event.preventDefault();
         send({type: "stop"});
         location.href = get_url_base();
     });
-    $("#game-over-restart").on("click", function(){
+    $("#game-over-restart").on("click", function(event){
+        event.preventDefault();
         send({type: "restart"});
         $("#gameOverModal").modal('hide');
     });
-    $("#bot-add").on("click", function(){
+    $("#bot-add").on("click", function(event){
+        event.preventDefault();
         send({type: "bot", name: $("#bot-name").val()});
+        $("#bot-name").val("");
+    });
+    $("#bot-name").on("keydown", function(event) {
+        var keyCode = event.keyCode || event.which;
+        if (keyCode == 13) {
+            $("#bot-add").trigger("click");
+            return false;
+        }
     });
 });
 

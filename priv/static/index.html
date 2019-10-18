@@ -89,7 +89,7 @@
         </div>
       </div>
     </div>
-    <div class="modal" id="gameOverModal" tabindex="-1" role="dialog" aria-labelledby="gameOverLabel" aria-hidden="true">
+    <div class="modal" id="gameOverModal" tabindex="-1" role="dialog" aria-labelledby="gameOverLabel" aria-hidden="true" data-keyboard="false" data-backdrop="static">
       <div class="model-dialog" role="document">
         <div class="modal-content">
           <div class="modal-header">
@@ -106,7 +106,7 @@
         </div>
       </div>
     </div>
-    <div class="modal" id="changeColorModal" tabindex="-1" role="dialog" aria-labelledby="changeColorLabel" aria-hidden="true">
+    <div class="modal" id="changeColorModal" tabindex="-1" role="dialog" aria-labelledby="changeColorLabel" aria-hidden="true" data-keyboard="true" data-backdrop="true">
       <div class="model-dialog" role="document">
         <div class="modal-content">
           <div class="modal-header">
@@ -114,32 +114,31 @@
           </div>
           <div class="modal-body">
             <div class="form-group">
-              <div class="form-check">
-                <input class="form-check-input" type="radio" name="color" id="color-green" value="green" checked>
-                <label class="form-check-label" for="color-green">Green</label>
+              <div class="color-card" id="color-card-green">
+                Green<br/>
+                <span id="color-card-green-count">0</span>
               </div>
-              <div class="form-check">
-                <input class="form-check-input" type="radio" name="color" id="color-blue" value="blue" checked>
-                <label class="form-check-label" for="color-blue">Blue</label>
+              <div class="color-card" id="color-card-blue">
+                Blue<br/>
+                <span id="color-card-blue-count">0</span>
               </div>
-              <div class="form-check">
-                <input class="form-check-input" type="radio" name="color" id="color-red" value="red" checked>
-                <label class="form-check-label" for="color-red">Red</label>
+              <div class="color-card" id="color-card-red">
+                Red<br/>
+                <span id="color-card-red-count">0</span>
               </div>
-              <div class="form-check">
-                <input class="form-check-input" type="radio" name="color" id="color-yellow" value="yellow" checked>
-                <label class="form-check-label" for="color-yellow">Yellow</label>
+              <div class="color-card" id="color-card-yellow">
+                Yellow<br/>
+                <span id="color-card-yellow-count">0</span>
               </div>
             </div>
           </div>
           <div class="modal-footer">
             <button id="chooseColorCancel" type="button" class="btn btn-default">Cancel</button>
-            <button id="chooseColor" type="button" class="btn btn-primary">Choose</button>
           </div>
         </div>
       </div>
     </div>
-    <div class="modal" id="onBoardingModal" tabindex="-1" role="dialog" aria-labelledby="onBoardingLabel" aria-hidden="true">
+    <div class="modal" id="onBoardingModal" tabindex="-1" role="dialog" aria-labelledby="onBoardingLabel" aria-hidden="true" data-keyboard="false" data-backdrop="static">
       <div class="model-dialog" role="document">
         <div class="modal-content">
           <div class="modal-header">
@@ -156,7 +155,7 @@
         </div>
       </div>
     </div>
-    <div class="modal" id="dealingModal" tabindex="-1" role="dialog" aria-labelledby="dealingLabel" aria-hidden="true">
+    <div class="modal" id="dealingModal" tabindex="-1" role="dialog" aria-labelledby="dealingLabel" aria-hidden="true" data-keyboard="false" data-backdrop="static">
       <div class="model-dialog" role="document">
         <div class="modal-content">
           <div class="modal-header">
@@ -179,7 +178,7 @@
         </div>
       </div>
     </div>
-    <div class="modal" id="howToPlayModal" tabindex="-1"  role="dialog" aria-labelledby="howToPlayLabel" aria-hidden="true">
+    <div class="modal" id="howToPlayModal" tabindex="-1"  role="dialog" aria-labelledby="howToPlayLabel" aria-hidden="true" data-keyboard="true" data-backdrop="true">
       <div class="modal-dialog" role="document">
         <div class="modal-content">
           <div class="modal-header">

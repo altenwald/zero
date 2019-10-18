@@ -41,25 +41,33 @@ defmodule Zero.Bot do
   defp process_event(:dealt, state) do
     if Game.is_my_turn?(state.game) do
       Process.sleep @time_to_think
-      play(state.game)
+      play(state.username, state.game)
     end
     {:noreply, [], state}
   end
   defp process_event({:turn, username, _previous}, %State{username: username} = state) do
+    Logger.debug "[#{username}] thinking my move"
     Process.sleep @time_to_think
-    play(state.game)
+    play(username, state.game)
     {:noreply, [], state}
   end
   defp process_event({:turn, _other, _previous}, state), do: {:noreply, [], state}
-  defp process_event({:gameover, _winner}, state), do: {:stop, :normal, state}
+  defp process_event({:game_over, winner}, state) do
+    Logger.debug "[#{state.username}] game over, winner is #{winner}"
+    ## just in case of restart, we don't leave yet
+    {:noreply, [], state}
+  end
   defp process_event(event, state) do
-    Logger.debug "event not handled => #{inspect event}"
+    Logger.warn "event not handled => #{inspect event}"
     {:noreply, [], state}
   end
 
-  defp play(game, tries \\ 2) do
-    {shown_color, shown_type} = Game.get_shown(game)
+  defp play(username, game, tries \\ 2) do
+    {_color, shown_type} = Game.get_shown(game)
+    shown_color = Game.color?(game)
+    Logger.debug "[#{username}] the show card is #{shown_color} color and #{shown_type} type"
     hand = Game.get_hand(game)
+    Logger.debug "[#{username}] my hand is #{inspect hand}"
     options = hand
               |> Enum.map(fn {i, {c, t}} -> {i, c, t} end)
               |> Enum.filter(fn {_, ^shown_color, _} -> true
@@ -71,14 +79,20 @@ defmodule Zero.Bot do
                                  {_, _, ^shown_type} -> 2
                                  {_, ^shown_color, _} -> 1
                               end)
-    Logger.debug "options => #{inspect options}"
+    Logger.debug "[#{username}] my options are #{inspect options}"
     case options do
-      [{i, :special, _}|_] -> Game.play(game, i, choose_color(hand))
-      [{i, color, _}|_] -> Game.play(game, i, color)
+      [{i, :special, _} = card|_] ->
+        Logger.debug "[#{username}] playing special one: #{inspect card}"
+        Game.play(game, i, choose_color(hand))
+      [{i, color, _} = card|_] ->
+        Logger.debug "[#{username}] playing card: #{inspect card}"
+        Game.play(game, i, color)
       [] when tries > 0 ->
+        Logger.debug "[#{username}] no card available. Picking up!"
         Game.pick_from_deck(game)
-        play(game, tries - 1)
+        play(username, game, tries - 1)
       [] ->
+        Logger.debug "[#{username}] no card. No pickup up. Passing!"
         Game.pass(game)
     end
   end
@@ -90,7 +104,13 @@ defmodule Zero.Bot do
     |> Enum.reduce(%{red: 0, green: 0, blue: 0, yellow: 0},
                    fn color, acc -> Map.update(acc, color, 1, &(&1 + 1)) end)
     |> Enum.sort_by(&(elem(&1, 1)), &>=/2)
+    |> log_options()
     |> hd()
     |> elem(0)
+  end
+
+  defp log_options(options) do
+    Logger.debug "options: #{inspect options}"
+    options
   end
 end

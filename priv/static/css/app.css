@@ -22,3 +22,34 @@ ul#log {
     list-style: none;
     text-align: left;
 }
+
+.color-card {
+    height: 107px;
+    width: 75px;
+    margin: 10px;
+    padding: 10px;
+    text-align: center;
+    display: inline-block;
+    cursor: pointer;
+}
+
+.card {
+    cursor: pointer;
+}
+
+#color-card-green {
+    color: white;
+    background-color: #00b90c;
+}
+#color-card-red {
+    color: white;
+    background-color: #960000;
+}
+#color-card-blue {
+    color: white;
+    background-color: #008cd2;
+}
+#color-card-yellow {
+    color: black;
+    background-color: #ffcc43;
+}

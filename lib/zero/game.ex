@@ -79,6 +79,7 @@ defmodule Zero.Game do
   def deck_cards_num(name), do: call name, :deck_cards_num
   def restart(name), do: cast name, :restart
   def valid_name?(name, username), do: call name, {:valid_name?, username}
+  def is_game_over?(name), do: call name, :is_game_over?
 
   def get_pid(game) do
     [{pid, _}] = Registry.lookup(Zero.Game.Registry, game)
@@ -104,6 +105,9 @@ defmodule Zero.Game do
 
   ## State: waiting for players
 
+  def waiting_players({:call, from}, :is_game_over?, _state) do
+    {:keep_state_and_data, [{:reply, from, false}]}
+  end
   def waiting_players(:cast, {:join, _, _}, %Game{players: players})
       when length(players) > @max_num_players do
     :keep_state_and_data
@@ -156,6 +160,9 @@ defmodule Zero.Game do
 
   ## State: playing
 
+  def playing({:call, from}, :is_game_over?, _state) do
+    {:keep_state_and_data, [{:reply, from, false}]}
+  end
   def playing(:cast, {:join, player_pid, name}, %Game{players: players} = game) do
     players = case List.keyfind(players, name, 1) do
       nil ->
@@ -271,9 +278,9 @@ defmodule Zero.Game do
 
   def playing({:call, from}, :pick_from_deck, %Game{deck: []} = game) do
     EventManager.notify(game.name, {:game_over, who_wins?(game)})
-    actions = [{:reply, from, :gameover},
+    actions = [{:reply, from, :game_over},
                {:state_timeout, @max_ended_time, :terminate}]
-    {:next_state, :ended, actions}
+    {:next_state, :ended, game, actions}
   end
   def playing({:call, from}, :pick_from_deck,
               %Game{pick_from_deck: 0}) do
@@ -313,6 +320,9 @@ defmodule Zero.Game do
 
   ## State: ended
 
+  def ended({:call, from}, :is_game_over?, _state) do
+    {:keep_state_and_data, [{:reply, from, true}]}
+  end
   def ended(:cast, :restart, game) do
     game = game
            |> Map.put(:deck, shuffle_cards())

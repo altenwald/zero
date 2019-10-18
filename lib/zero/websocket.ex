@@ -15,7 +15,10 @@ defmodule Zero.Websocket do
 
   def handle_events(events, _from, game) do
     Logger.debug "events => #{inspect events}"
-    for event <- events, do: send(game, event)
+    for event <- events do
+      Logger.debug "sending event #{inspect event} to #{inspect game}"
+      send(game, event)
+    end
     {:noreply, [], game}
   end
 
@@ -86,7 +89,8 @@ defmodule Zero.Websocket do
   end
 
   def websocket_info({:game_over, winner}, state) do
-    msg = %{"type" => "gameover", "winner" => winner}
+    msg = send_update_msg("game_over", state.name)
+          |> Map.put("winner", winner)
     {:reply, {:text, Jason.encode!(msg)}, state}
   end
 
@@ -174,14 +178,19 @@ defmodule Zero.Websocket do
     if Game.exists?(name) do
       pid = EventManager.get_pid(name)
       username = String.trim(username)
-      # FIXME: put this process under supervision tree, registry or some way
-      #        to ensure it's not added again and again.
       GenStage.start_link __MODULE__, [pid, self()]
-      for {player, _} <- Game.players(name), player != username do
-        send self(), {:join, player}
+      if not Game.is_game_over?(name) do
+        # FIXME: put this process under supervision tree, registry or some way
+        #        to ensure it's not added again and again.
+        for {player, _} <- Game.players(name), player != username do
+          send self(), {:join, player}
+        end
+        Game.join(name, username)
+        {:ok, %{state | name: name}}
+      else
+        Game.restart(name)
+        {:ok, state}
       end
-      Game.join(name, username)
-      {:ok, %{state | name: name}}
     else
       Logger.warn "doesn't exist #{inspect name}"
       msg = %{"type" => "notfound", "error" => true}
