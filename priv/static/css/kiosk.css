@@ -1,0 +1,24 @@
+.fas, .far {
+  font-size: 25px;
+}
+
+.card,
+#card-shown {
+  width: 75px;
+}
+#game-hand-cards img {
+  width: 75px;
+  display: inline-block;
+}
+#game-shown {
+  text-align: center;
+}
+ul#log {
+  border: 1px solid;
+  padding: 5px;
+  width: 100%;
+  height: 500px;
+  font-family: 'Courier New', Courier, monospace;
+  list-style: none;
+  text-align: left;
+}

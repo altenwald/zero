@@ -14,8 +14,8 @@ defmodule Zero.Application do
 
     children = [
       {Registry, keys: :unique, name: Zero.Game.Registry},
-      {Registry, keys: :unique, name: Zero.EventManager.Registry},
       {DynamicSupervisor, strategy: :one_for_one, name: Zero.Games},
+      {Registry, keys: :unique, name: Zero.EventManager.Registry},
       Plug.Cowboy.child_spec(scheme: :http,
                              plug: Zero.Router,
                              options: [port: port_number,
@@ -32,7 +32,8 @@ defmodule Zero.Application do
     [
       {:_, [
         {"/websession", Zero.Websocket, []},
-        {:_, Plug.Cowboy.Handler, {Zero.Router, []}}
+        {"/kiosksession", Zero.Kiosk.Websocket, []},
+        {:_, Plug.Cowboy.Handler, {Zero.Router, []}},
       ]}
     ]
   end

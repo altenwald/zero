@@ -8,11 +8,21 @@ defmodule Zero.Router do
                      json_decoder: Jason
   plug :match
   plug :dispatch
-  plug ETag.Plug
+  # plug ETag.Plug
 
   get "/" do
     priv_dir = :code.priv_dir(:zero)
     send_file(conn, 200, "#{priv_dir}/static/index.html")
+  end
+
+  get "/kiosk" do
+    priv_dir = :code.priv_dir(:zero)
+    send_file(conn, 200, "#{priv_dir}/static/kiosk.html")
+  end
+
+  get "/kiosk/:id" do
+    priv_dir = :code.priv_dir(:zero)
+    send_file(conn, 200, "#{priv_dir}/static/kiosk.html")
   end
 
   get "/qr/:id" do

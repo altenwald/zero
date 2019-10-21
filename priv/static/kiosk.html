@@ -1,0 +1,109 @@
+<html lang="es">
+<head>
+    <meta charset="utf-8"/>
+    <title>Zero Game - Kiosk</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta name="description" content="Zero Game">
+    <meta name="author" content="Altenwald Solutions, S.L.">
+    <link rel="stylesheet"
+          href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/css/bootstrap.min.css"
+          integrity="sha384-MCw98/SFnGE8fJT3GXwEOngsV7Zt27NXFoaoApmYm81iuXoPkFOJwJ8ERdknLPMO"
+          crossorigin="anonymous">
+    <script src="https://code.jquery.com/jquery-3.3.1.min.js"
+            integrity="sha256-FgpCb/KJQlLNfOu91ta32o/NMZxltwRo8QtmkMRdAu8="
+            crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.3/umd/popper.min.js"
+            integrity="sha384-ZMP7rVo3mIykV+2+9J3UJ46jBk0WLaUAdn689aCwoqbBJiSnjAK/l8WvCWPIPm49"
+            crossorigin="anonymous"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/js/bootstrap.min.js"
+            integrity="sha384-ChfqqxuZUCnJSK3+MXmPNIyE6ZbWh2IMqE241rYiqJxyMiZ6OW/JmZQ5stwEULTy"
+            crossorigin="anonymous"></script>
+    <link rel="stylesheet" type="text/css" href="/css/kiosk.css"/>
+    <script type="text/javascript" src="/js/kiosk.js"></script>
+    <!-- Global site tag (gtag.js) - Google Analytics -->
+    <!-- <script async src="https://www.googletagmanager.com/gtag/js?id=UA-6954758-10"></script>
+    <script type="text/javascript" src="/js/google_analytics.js"></script> -->
+    <!-- Go to www.addthis.com/dashboard to customize your tools -->
+    <!-- <script type="text/javascript" src="//s7.addthis.com/js/300/addthis_widget.js#pubid=ra-5cad355f0a4ac15b"></script> -->
+    <script src="https://kit.fontawesome.com/7d70bbec1c.js"></script>
+</head>
+<body>
+    <div class="d-flex flex-column flex-md-row align-items-center p-3 px-md-4 mb-3 bg-white border-bottom shadow-sm">
+      <h5 class="my-0 mr-md-auto font-weight-normal">Zero Game <span id="vsn"></span></h5>
+    </div>
+    <div class="container text-center">
+      <div id="game-deck">Cards in Deck: <span>110</span></div>
+      <div id="game-msg">
+        <strong>Waiting for players...</strong>
+      </div>
+      <div class="container">
+        <div class="row">
+          <div class="col-sm-4" id="game-shown">
+            <h2>Shown</h2>
+            <div id="game-color">Color: <span>blue</span></div>
+            <img id="card-shown" src="/img/cards/blue0.png"/>
+          </div>
+          <div class="col-sm-8" id="game-players">
+            <h2>Players</h2>
+            <table class="table table-sm">
+              <thead class="thead-light">
+                <tr>
+                  <th>Player</th>
+                  <th>Cards</th>
+                </tr>
+              </thead>
+              <tbody id="list-players">
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div class="row justify-content-md-center">
+          <ul id="log"></ul>
+        </div>
+      </div>
+    </div>
+    <div class="modal" id="gameOverModal" tabindex="-1" role="dialog" aria-labelledby="gameOverLabel" aria-hidden="true" data-keyboard="false" data-backdrop="static">
+      <div class="model-dialog" role="document">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="gameOverLabel">Game Over</h5>
+          </div>
+          <div class="modal-body">
+            <p><strong id="game-over-msg"></strong></p>
+            <table class="table table-sm">
+              <thead class="thead-light">
+                <tr>
+                  <th>Player</th>
+                  <th>Win</th>
+                </tr>
+              </thead>
+              <tbody id="list-hiscore">
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="modal" id="dealingModal" tabindex="-1" role="dialog" aria-labelledby="dealingLabel" aria-hidden="true" data-keyboard="false" data-backdrop="static">
+      <div class="model-dialog" role="document">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="onBoardingLabel">Play</h5>
+          </div>
+          <div class="modal-body">
+            <p>Press deal button when all of the players are on board! Players:</p>
+            <ul id="modal-players">
+            </ul>
+            <p>Share: <a id="modal-players-url" href=""></a></p>
+            <img src="" width="100px" id="modal-players-url-img">
+            <div class="input-group">
+                <input type="text" class="form-control" id="bot-name" placeholder="Bot Name">
+                <button type="button" class="btn btn-default" id="bot-add">Add Bot</button>
+              </div>
+            </div>
+        </div>
+      </div>
+    </div>
+    <footer class="footer">&nbsp;</footer>
+  </body>
+</html>

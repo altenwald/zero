@@ -80,6 +80,7 @@ defmodule Zero.Game do
   def restart(name), do: cast name, :restart
   def valid_name?(name, username), do: call name, {:valid_name?, username}
   def is_game_over?(name), do: call name, :is_game_over?
+  def is_started?(name), do: call name, :is_started?
 
   def get_pid(game) do
     [{pid, _}] = Registry.lookup(Zero.Game.Registry, game)
@@ -105,6 +106,10 @@ defmodule Zero.Game do
 
   ## State: waiting for players
 
+  def waiting_players(:state_timeout, :game_over, _state), do: :stop
+  def waiting_players({:call, from}, :is_started?, _state) do
+    {:keep_state_and_data, [{:reply, from, false}]}
+  end
   def waiting_players({:call, from}, :is_game_over?, _state) do
     {:keep_state_and_data, [{:reply, from, false}]}
   end
@@ -154,14 +159,21 @@ defmodule Zero.Game do
     {:keep_state, %Game{game | players: players -- [player]}}
   end
 
+  def waiting_players({:call, from}, _event, _state) do
+    {:keep_state_and_data, [{:reply, from, nil}]}
+  end
   def waiting_players(:cast, :restart, _game) do
     :keep_state_and_data
   end
 
   ## State: playing
 
+  def playing(:state_timeout, :game_over, _state), do: :stop
   def playing({:call, from}, :is_game_over?, _state) do
     {:keep_state_and_data, [{:reply, from, false}]}
+  end
+  def playing({:call, from}, :is_started?, _state) do
+    {:keep_state_and_data, [{:reply, from, true}]}
   end
   def playing(:cast, {:join, player_pid, name}, %Game{players: players} = game) do
     players = case List.keyfind(players, name, 1) do
@@ -323,6 +335,9 @@ defmodule Zero.Game do
   def ended({:call, from}, :is_game_over?, _state) do
     {:keep_state_and_data, [{:reply, from, true}]}
   end
+  def ended({:call, from}, :is_started?, _state) do
+    {:keep_state_and_data, [{:reply, from, false}]}
+  end
   def ended(:cast, :restart, game) do
     game = game
            |> Map.put(:deck, shuffle_cards())
@@ -384,7 +399,7 @@ defmodule Zero.Game do
 
   def ended(:info, _msg, _game), do: :keep_state_and_data
 
-  def ended(:timeout, :terminate, _game), do: :stop
+  def ended(:state_timeout, :terminate, _game), do: :stop
 
   ## Internal functions
 
