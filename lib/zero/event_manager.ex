@@ -6,10 +6,7 @@ defmodule Zero.EventManager do
   end
 
   def exists?(name) do
-    case Registry.lookup(Zero.EventManager.Registry, name) do
-      [{_pid, nil}] -> true
-      [] -> false
-    end
+    [] != Registry.lookup(Zero.EventManager.Registry, name)
   end
 
   def get_pid(name) do

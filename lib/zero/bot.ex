@@ -5,7 +5,7 @@ defmodule Zero.Bot do
   use GenStage
 
   @time_to_think 1_000
-  @colors [:red, :green, :blue, :yellow]
+  @colors ~w(red, green, blue, yellow)a
 
   defmodule State do
     defstruct [:game, :username]
