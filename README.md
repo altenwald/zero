@@ -4,8 +4,7 @@ Zero Cards Game... yes, it's similar to Uno&trade; but I don't like to say "Uno"
 
 If you love this content and want we can generate more, you can support us:
 
-[![paypal](https://www.paypalobjects.com/en_US/GB/i/btn/btn_donateCC_LG.gif)](https://www.paypal.com
-/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=RC5F8STDA6AXE)
+[![paypal](https://www.paypalobjects.com/en_US/GB/i/btn/btn_donateCC_LG.gif)](https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=RC5F8STDA6AXE)
 
 ## Getting Started
 
