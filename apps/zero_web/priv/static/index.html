@@ -41,6 +41,15 @@
       <a id="game-howtoplay" class="btn btn-outline-primary" href="#" data-toggle="modal" data-target="#howToPlayModal" title="Help">
         <i class="fas fa-life-ring"></i>
       </a>
+      <div class="dropdown">
+        <button class="btn btn-outline-primary" type="button" id="dropdownMenuButton" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+          <img id="fa-deck" src="img/deck.png"/>
+        </button>
+        <div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
+          <a class="dropdown-item" href="#" id="deck-timmy">Timmy Adventures</a>
+          <a class="dropdown-item" href="#" id="deck-uno">Uno</a>
+        </div>
+      </div>
       <div id="game-deck">Cards in Deck: <span>110</span></div>
       <div id="game-msg">
         <strong>Waiting for players...</strong>
@@ -49,11 +58,11 @@
         <div id="game-hand">
           <h2>Your cards</h2>
           <div id="game-hand-cards">
-            <img id="card-1" class="card" src="/img/cards/green0.png"/>
-            <img id="card-2" class="card" src="/img/cards/red1.png"/>
-            <img id="card-3" class="card" src="/img/cards/yellow2.png"/>
-            <img id="card-4" class="card" src="/img/cards/blue3.png"/>
-            <img id="card-5" class="card" src="/img/cards/green4.png"/>
+            <img id="card-1" class="card" src="/img/cards/backside.png"/>
+            <img id="card-2" class="card" src="/img/cards/backside.png"/>
+            <img id="card-3" class="card" src="/img/cards/backside.png"/>
+            <img id="card-4" class="card" src="/img/cards/backside.png"/>
+            <img id="card-5" class="card" src="/img/cards/backside.png"/>
           </div>
         </div>
         <div class="row">
@@ -150,6 +159,9 @@
             </div>
           </div>
           <div class="modal-footer">
+            <button id="game-howtoplay" class="btn btn-primary" href="#" data-toggle="modal" data-target="#howToPlayModal" title="Help">
+              <i class="fas fa-life-ring"></i>
+            </button>
             <button id="join" type="button" class="btn btn-primary">Join</button>
           </div>
         </div>
@@ -186,6 +198,63 @@
           </div>
           <div class="modal-body">
             <p>If you want to make suggestions or obtain the source code you can go to <a href="https://github.com/altenwald/zero">Github site</a> and create a issue, fork the code to send us modifications or fixes or whatever.</p>
+            <p>Don't forget to give as an start!</p>
+            <iframe src="https://ghbtns.com/github-btn.html?user=altenwald&repo=zero&type=star&count=true&size=large" frameborder="0" scrolling="0" width="170" height="30" title="GitHub"></iframe>
+            <h2>Starting with a Match</h2>
+            <p>You have to provide a screen name for you and then you are going to be redirected to the waiting screen. This screen will show you the players incoming to play with you, the URL and QR code to join to the match and the possibility to add bots to your match.</p>
+            <p><strong>CAUTION:</strong> do NOT press the Deal button until everyone is inside of the game. Deal means you are going to start the game and it's not possible to go back:</p>
+            <p><button type="button" class="btn btn-primary">Deal</button></p>
+            <p>Once the game is over, you will get two options:</p>
+            <p>
+              <button type="button" class="btn btn-success">New One</button>
+              <button type="button" class="btn btn-primary">Restart</button>
+            </p>
+            <p>The "New One" button let us to start a completely new game which is letting to us to reconfigure the people who is going to play with us.</p>
+            <p>The "Restart" is going into the new match with exactly the same people to play with.</p>
+            <h2>Playing to Zero</h2>
+            <p>Zero is a game for 2-8 players. The mission of the game is being the first one dropping all of their cards. You start with 5 cards and you can only play during your turn and drop one card based on the following rules.</p>
+            <h2>Rules</h2>
+            <ul>
+              <li>
+                The card to be dropped on the table should match or in number or in color to the card "shown". For example:<br/>
+                <img class="help-img" src="/img/cards/timmy/blue2.png"/><br/>
+                This card is the number 2 and color blue. So, the card you can play should be or blue or numbered as 2, or both.
+              </li>
+              <li>
+                There are special cards you can play depending on the situation. You can use a change direction card if the color match:<br/>
+                <img class="help-img" src="/img/cards/timmy/greenreverse.png"/><br/>
+                You can also ban the next player to play using a turn lost card if the color match:<br/>
+                <img class="help-img" src="/img/cards/timmy/redturn.png"/><br/>
+                You can also give a gift to the next player of two extra cards if the color match:<br/>
+                <img class="help-img" src="/img/cards/timmy/yellowplus_2.png"/><br/>
+                Also you can change the color whenever you want with this card:<br/>
+                <img class="help-img" src="/img/cards/timmy/specialcolor_change.png"/><br/>
+                And finally, you can give a great gift to the following player of 4 extra cards, whenever you want if you use this special card:<br/>
+                <img class="help-img" src="/img/cards/timmy/specialplus_4.png"/>
+              </li>
+              <li>
+                If you have no cards to play you are forced to get one extra card from the deck. You can do it using the button:<br/>
+                <a class="btn btn-outline-info" href="#" title="Pick a card">
+                  <i class="fas fa-hand-lizard"></i>
+                </a><br/>
+                You can pick up until 4 cards in each turn.
+              </li>
+              <li>
+                If after pick up at least one card you still have no cards to play, you can pass:<br/>
+                <a class="btn btn-outline-info" href="#" title="Pass">
+                  <i class="fas fa-hand-paper"></i>
+                </a>
+              </li>
+              <li>If the cards from deck are empty (you can see the number of cards from deck in <strong>Cards in Deck: XX</strong> legend), if you cannot play with your cards, the game is over. In order of appeareance in the tables of turns you can be the first one if you have less cards than others.</li>
+              <li>If you drop your last card, you are the Zero winner!!!</li>
+            </ul>
+            <h2>Kiosk</h2>
+            <p>If you want to play with others in the same room, the best configuration is playing using your phone mobiles and putting the Kiosk screen in a computer or in the TV. You can load a new match using this URL:</p>
+            <p><a href="https://zero.altenwald.com/kiosk">https://zero.altenwald.com/kiosk</a>.</p>
+            <p>The Kiosk only shows the information of the shown card, the table of the turns, the log view and when the match is over, the information about the high scores for the rounds.</p>
+            <p>If you want to play with the same people again using the same high scores, you can press the Restart button when the match is over:</p>
+            <p><button type="button" class="btn btn-primary">Restart</button></p>
+            <h2>Donations</h2>
             <p>In the same way we will be pleased receiving donations:</p>
             <a target="_blank" href="https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=RC5F8STDA6AXE"><img src="https://www.paypalobjects.com/en_US/GB/i/btn/btn_donateCC_LG.gif" alt="paypal"></a>
             <p>Thanks! and Enjoy!</p>

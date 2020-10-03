@@ -26,6 +26,10 @@ defmodule ZeroWeb.Application do
     Supervisor.start_link(children, opts)
   end
 
+  def vsn do
+    to_string(Application.spec(:zero_web)[:vsn])
+  end
+
   defp dispatch do
     [
       {:_,

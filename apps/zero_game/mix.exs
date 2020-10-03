@@ -4,7 +4,7 @@ defmodule ZeroGame.MixProject do
   def project do
     [
       app: :zero_game,
-      version: "0.1.0",
+      version: "0.7.0",
       build_path: "../../_build",
       config_path: "../../config/config.exs",
       deps_path: "../../deps",
@@ -26,9 +26,8 @@ defmodule ZeroGame.MixProject do
   # Run "mix help deps" to learn about dependencies.
   defp deps do
     [
-      {:gen_state_machine, "~> 2.0"},
-      {:gen_stage, "~> 0.14"},
-      {:uuid, "~> 1.1"},
+      {:gen_state_machine, "~> 2.1"},
+      {:gen_stage, "~> 1.0"}
     ]
   end
 end

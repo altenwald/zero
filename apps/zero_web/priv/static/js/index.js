@@ -4,6 +4,7 @@ var username;
 var dealt = false;
 var refresh_hand = false;
 var card;
+var deck = "timmy"
 
 function disconnected(should_i_reconnect) {
     if (should_i_reconnect) {
@@ -12,6 +13,16 @@ function disconnected(should_i_reconnect) {
     } else {
         $("#game-msg").html("<strong>¡Disconnected!</strong>");
     }
+}
+
+function change_deck(from, to) {
+    $("img").each(function (i, e) {
+        var attr = $(e).attr("src");
+        if (attr.startsWith("/img/cards/" + from) || attr.startsWith("img/cards/" + from)) {
+            var pngfile = attr.split("/").reverse()[0];
+            $(e).attr("src", "img/cards/" + to + "/" + pngfile);
+        }
+    });
 }
 
 function send(message) {
@@ -316,6 +327,20 @@ $(document).ready(function(){
     $("#game-pass").on("click", function(event) {
         event.preventDefault();
         send({type: "pass"});
+    });
+    $("#deck-timmy").on("click", function(event) {
+        event.preventDefault();
+        var old_deck = deck;
+        deck = "timmy";
+        change_deck(old_deck, deck);
+        send({type: "deck", name: deck});
+    });
+    $("#deck-uno").on("click", function(event) {
+        event.preventDefault();
+        var old_deck = deck;
+        deck = "uno";
+        change_deck(old_deck, deck);
+        send({type: "deck", name: deck});
     });
     $(".color-card").on("click", function(event){
         event.preventDefault();

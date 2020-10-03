@@ -53,3 +53,17 @@ ul#log {
     color: black;
     background-color: #ffcc43;
 }
+
+img.help-img {
+    width: 100px;
+    margin-top: 20px;
+    margin-bottom: 20px;
+}
+
+.dropdown {
+    display: inline-block;
+}
+
+img#fa-deck {
+    width: 25px;
+}

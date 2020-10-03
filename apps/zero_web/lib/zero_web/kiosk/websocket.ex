@@ -2,6 +2,7 @@ defmodule ZeroWeb.Kiosk.Websocket do
   require Logger
   alias ZeroGame
   alias ZeroGame.{EventManager, Bot}
+  alias ZeroWeb.Request
 
   @behaviour :cowboy_websocket
 
@@ -9,24 +10,12 @@ defmodule ZeroWeb.Kiosk.Websocket do
 
   def init(req, opts) do
     Logger.info("[websocket] init req => #{inspect(req)}")
-
-    remote_ip =
-      case :cowboy_req.peer(req) do
-        {{127, 0, 0, 1}, _} ->
-          case :cowboy_req.header("x-forwarded-for", req) do
-            {remote_ip, _} -> remote_ip
-            _ -> "127.0.0.1"
-          end
-
-        {remote_ip, _} ->
-          to_string(:inet.ntoa(remote_ip))
-      end
-
+    remote_ip = Request.remote_ip(req)
     {:cowboy_websocket, req, [{:remote_ip, remote_ip} | opts]}
   end
 
   def websocket_init(remote_ip: remote_ip) do
-    vsn = to_string(Application.spec(:zero_web)[:vsn])
+    vsn = ZeroWeb.Application.vsn()
     send(self(), {:send, Jason.encode!(%{"type" => "vsn", "vsn" => vsn})})
     {:ok, hiscore} = Agent.start_link(fn -> %{} end)
     {:ok, %{name: nil, remote_ip: remote_ip, hiscore: hiscore}}
