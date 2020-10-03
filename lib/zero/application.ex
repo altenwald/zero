@@ -16,13 +16,14 @@ defmodule Zero.Application do
       {Registry, keys: :unique, name: Zero.Game.Registry},
       {DynamicSupervisor, strategy: :one_for_one, name: Zero.Games},
       {Registry, keys: :unique, name: Zero.EventManager.Registry},
-      Plug.Cowboy.child_spec(scheme: :http,
-                             plug: Zero.Router,
-                             options: [port: port_number,
-                                       dispatch: dispatch()]),
+      Plug.Cowboy.child_spec(
+        scheme: :http,
+        plug: Zero.Router,
+        options: [port: port_number, dispatch: dispatch()]
+      )
     ]
 
-    Logger.info "[app] initiated application"
+    Logger.info("[app] initiated application")
 
     opts = [strategy: :one_for_one, name: Zero.Supervisor]
     Supervisor.start_link(children, opts)
@@ -30,11 +31,12 @@ defmodule Zero.Application do
 
   defp dispatch do
     [
-      {:_, [
-        {"/websession", Zero.Websocket, []},
-        {"/kiosksession", Zero.Kiosk.Websocket, []},
-        {:_, Plug.Cowboy.Handler, {Zero.Router, []}},
-      ]}
+      {:_,
+       [
+         {"/websession", Zero.Websocket, []},
+         {"/kiosksession", Zero.Kiosk.Websocket, []},
+         {:_, Plug.Cowboy.Handler, {Zero.Router, []}}
+       ]}
     ]
   end
 end

@@ -5,7 +5,7 @@ defmodule Zero.Websocket do
   use GenStage
 
   def init([producer, game]) do
-    Process.monitor game
+    Process.monitor(game)
     {:consumer, game, subscribe_to: [producer]}
   end
 
@@ -14,33 +14,39 @@ defmodule Zero.Websocket do
   end
 
   def handle_events(events, _from, game) do
-    Logger.debug "events => #{inspect events}"
+    Logger.debug("events => #{inspect(events)}")
+
     for event <- events do
-      Logger.debug "sending event #{inspect event} to #{inspect game}"
+      Logger.debug("sending event #{inspect(event)} to #{inspect(game)}")
       send(game, event)
     end
+
     {:noreply, [], game}
   end
 
   @behaviour :cowboy_websocket
 
   def init(req, opts) do
-    Logger.info "[websocket] init req => #{inspect req}"
-    remote_ip = case :cowboy_req.peer(req) do
-      {{127, 0, 0, 1}, _} ->
-        case :cowboy_req.header("x-forwarded-for", req) do
-          {remote_ip, _} -> remote_ip
-          _ -> "127.0.0.1"
-        end
-      {remote_ip, _} ->
-        to_string(:inet.ntoa(remote_ip))
-    end
-    {:cowboy_websocket, req, [{:remote_ip, remote_ip}|opts]}
+    Logger.info("[websocket] init req => #{inspect(req)}")
+
+    remote_ip =
+      case :cowboy_req.peer(req) do
+        {{127, 0, 0, 1}, _} ->
+          case :cowboy_req.header("x-forwarded-for", req) do
+            {remote_ip, _} -> remote_ip
+            _ -> "127.0.0.1"
+          end
+
+        {remote_ip, _} ->
+          to_string(:inet.ntoa(remote_ip))
+      end
+
+    {:cowboy_websocket, req, [{:remote_ip, remote_ip} | opts]}
   end
 
   def websocket_init(remote_ip: remote_ip) do
     vsn = to_string(Application.spec(:zero)[:vsn])
-    send self(), {:send, Jason.encode!(%{"type" => "vsn", "vsn" => vsn})}
+    send(self(), {:send, Jason.encode!(%{"type" => "vsn", "vsn" => vsn})})
     {:ok, %{name: nil, remote_ip: remote_ip}}
   end
 
@@ -78,8 +84,10 @@ defmodule Zero.Websocket do
   end
 
   def websocket_info({:turn, _username, previous}, state) do
-    msg = send_update_msg("turn", state.name)
-          |> Map.put("previous", previous)
+    msg =
+      send_update_msg("turn", state.name)
+      |> Map.put("previous", previous)
+
     {:reply, {:text, Jason.encode!(msg)}, state}
   end
 
@@ -89,33 +97,43 @@ defmodule Zero.Websocket do
   end
 
   def websocket_info({:game_over, winner}, state) do
-    msg = send_update_msg("game_over", state.name)
-          |> Map.put("winner", winner)
+    msg =
+      send_update_msg("game_over", state.name)
+      |> Map.put("winner", winner)
+
     {:reply, {:text, Jason.encode!(msg)}, state}
   end
 
   def websocket_info({:pass, player_name}, state) do
-    msg = send_update_msg("pass", state.name)
-          |> Map.put("previous", player_name)
+    msg =
+      send_update_msg("pass", state.name)
+      |> Map.put("previous", player_name)
+
     {:reply, {:text, Jason.encode!(msg)}, state}
   end
 
   def websocket_info({:plus_2, _username, previous}, state) do
-    msg = send_update_msg("plus_2", state.name)
-          |> Map.put("previous", previous)
+    msg =
+      send_update_msg("plus_2", state.name)
+      |> Map.put("previous", previous)
+
     {:reply, {:text, Jason.encode!(msg)}, state}
   end
 
   def websocket_info({:plus_4, _username, previous}, state) do
-    msg = send_update_msg("plus_4", state.name)
-          |> Map.put("previous", previous)
+    msg =
+      send_update_msg("plus_4", state.name)
+      |> Map.put("previous", previous)
+
     {:reply, {:text, Jason.encode!(msg)}, state}
   end
 
   def websocket_info({:lose_turn, username, previous}, state) do
-    msg = send_update_msg("lose_turn", state.name)
-          |> Map.put("previous", previous)
-          |> Map.put("skipped", username)
+    msg =
+      send_update_msg("lose_turn", state.name)
+      |> Map.put("previous", previous)
+      |> Map.put("skipped", username)
+
     {:reply, {:text, Jason.encode!(msg)}, state}
   end
 
@@ -125,34 +143,39 @@ defmodule Zero.Websocket do
   end
 
   def websocket_info({:reverse, username}, state) do
-    msg = send_update_msg("reverse", state.name)
-          |> Map.put("previous", username)
+    msg =
+      send_update_msg("reverse", state.name)
+      |> Map.put("previous", username)
+
     {:reply, {:text, Jason.encode!(msg)}, state}
   end
 
   def websocket_info(info, state) do
-    Logger.info "info => #{inspect info}"
+    Logger.info("info => #{inspect(info)}")
     {:ok, state}
   end
 
   def websocket_terminate(reason, _state) do
-    Logger.info "reason => #{inspect reason}"
+    Logger.info("reason => #{inspect(reason)}")
     :ok
   end
 
   defp send_update_msg(event, name) do
-    %{"type" => event,
+    %{
+      "type" => event,
       "hand" => get_cards(Game.get_hand(name)),
       "shown" => get_card(Game.get_shown(name)),
       "shown_color" => to_string(Game.color?(name)),
       "players" => get_players(Game.players(name)),
       "turn" => Game.whose_turn_is_it?(name),
-      "deck" => Game.deck_cards_num(name)}
+      "deck" => Game.deck_cards_num(name)
+    }
   end
 
   defp get_card({color, type}) do
     [to_string(color), "/img/cards/#{color}#{type}.png"]
   end
+
   defp get_cards(cards) do
     for {_k, card} <- cards do
       get_card(card)
@@ -172,19 +195,23 @@ defmodule Zero.Websocket do
     state = %{state | name: name}
     {:reply, {:text, Jason.encode!(msg)}, state}
   end
-  defp process_data(%{"type" => "join",
-                      "name" => name,
-                      "username" => username}, state) do
+
+  defp process_data(
+         %{"type" => "join", "name" => name, "username" => username},
+         state
+       ) do
     if Game.exists?(name) do
       pid = EventManager.get_pid(name)
       username = String.trim(username)
-      GenStage.start_link __MODULE__, [pid, self()]
+      GenStage.start_link(__MODULE__, [pid, self()])
+
       if not Game.is_game_over?(name) do
         # FIXME: put this process under supervision tree, registry or some way
         #        to ensure it's not added again and again.
         for {player, _} <- Game.players(name), player != username do
-          send self(), {:join, player}
+          send(self(), {:join, player})
         end
+
         Game.join(name, username)
         {:ok, %{state | name: name}}
       else
@@ -192,42 +219,52 @@ defmodule Zero.Websocket do
         {:ok, state}
       end
     else
-      Logger.warn "doesn't exist #{inspect name}"
+      Logger.warn("doesn't exist #{inspect(name)}")
       msg = %{"type" => "notfound", "error" => true}
       {:reply, {:text, Jason.encode!(msg)}, state}
-    end  
+    end
   end
+
   defp process_data(%{"type" => "deal"}, %{name: name} = state) do
     Game.deal(name)
     {:ok, state}
   end
+
   defp process_data(%{"type" => "play", "card" => card, "color" => color}, state) do
-    color = case color do
-      "red" -> :red
-      "blue" -> :blue
-      "yellow" -> :yellow
-      "green" -> :green
-    end
+    color =
+      case color do
+        "red" -> :red
+        "blue" -> :blue
+        "yellow" -> :yellow
+        "green" -> :green
+      end
+
     Game.play(state.name, card, color)
     {:ok, state}
   end
+
   defp process_data(%{"type" => "pick-from-deck"}, state) do
     Game.pick_from_deck(state.name)
     {:ok, state}
   end
+
   defp process_data(%{"type" => "pass"}, state) do
     Game.pass(state.name)
     {:ok, state}
   end
+
   defp process_data(%{"type" => "restart"}, state) do
     Game.restart(state.name)
     {:ok, state}
   end
+
   defp process_data(%{"type" => "bot", "name" => botname}, state) do
     botname = String.trim(botname)
+
     if Game.valid_name?(state.name, botname) do
       Bot.start_link(state.name, botname)
     end
+
     {:ok, state}
   end
 end

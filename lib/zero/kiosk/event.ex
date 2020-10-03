@@ -3,7 +3,7 @@ defmodule Zero.Kiosk.Event do
   require Logger
 
   def init([producer, game]) do
-    Process.monitor game
+    Process.monitor(game)
     {:consumer, game, subscribe_to: [producer]}
   end
 
@@ -12,11 +12,13 @@ defmodule Zero.Kiosk.Event do
   end
 
   def handle_events(events, _from, game) do
-    Logger.debug "events => #{inspect events}"
+    Logger.debug("events => #{inspect(events)}")
+
     for event <- events do
-      Logger.debug "sending event #{inspect event} to #{inspect game}"
+      Logger.debug("sending event #{inspect(event)} to #{inspect(game)}")
       send(game, event)
     end
+
     {:noreply, [], game}
   end
 end

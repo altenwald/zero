@@ -31,7 +31,7 @@ defmodule Zero.MixProject do
       {:eqrcode, "~> 0.1.6"},
 
       # for releases
-      {:distillery, "~> 2.0"},
+      {:distillery, "~> 2.0"}
     ]
   end
 end

@@ -19,10 +19,10 @@ defmodule Zero.EventManager do
   end
 
   def stop(name) do
-    GenStage.stop via(name)
+    GenStage.stop(via(name))
   end
 
-  def notify(name, event), do: GenStage.cast via(name), {:notify, event}
+  def notify(name, event), do: GenStage.cast(via(name), {:notify, event})
 
   def init([]) do
     {:producer, [], dispatcher: GenStage.BroadcastDispatcher}
