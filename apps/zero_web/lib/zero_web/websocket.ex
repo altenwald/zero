@@ -1,10 +1,32 @@
-defmodule Zero.Kiosk.Websocket do
+defmodule ZeroWeb.Websocket do
+  use GenStage
+
   require Logger
-  alias Zero.{Game, EventManager, Bot}
+
+  alias ZeroGame
+  alias ZeroGame.{EventManager, Bot}
+
+  def init([producer, game]) do
+    Process.monitor(game)
+    {:consumer, game, subscribe_to: [producer]}
+  end
+
+  def handle_info({:DOWN, _ref, :process, _pid, _reason}, state) do
+    {:stop, :normal, state}
+  end
+
+  def handle_events(events, _from, game) do
+    Logger.debug("events => #{inspect(events)}")
+
+    for event <- events do
+      Logger.debug("sending event #{inspect(event)} to #{inspect(game)}")
+      send(game, event)
+    end
+
+    {:noreply, [], game}
+  end
 
   @behaviour :cowboy_websocket
-
-  @event_listen Zero.Kiosk.Event
 
   def init(req, opts) do
     Logger.info("[websocket] init req => #{inspect(req)}")
@@ -25,10 +47,9 @@ defmodule Zero.Kiosk.Websocket do
   end
 
   def websocket_init(remote_ip: remote_ip) do
-    vsn = to_string(Application.spec(:zero)[:vsn])
+    vsn = to_string(Application.spec(:zero_web)[:vsn])
     send(self(), {:send, Jason.encode!(%{"type" => "vsn", "vsn" => vsn})})
-    {:ok, hiscore} = Agent.start_link(fn -> %{} end)
-    {:ok, %{name: nil, remote_ip: remote_ip, hiscore: hiscore}}
+    {:ok, %{name: nil, remote_ip: remote_ip}}
   end
 
   def websocket_handle({:text, msg}, state) do
@@ -50,17 +71,7 @@ defmodule Zero.Kiosk.Websocket do
   end
 
   def websocket_info({:join, player}, state) do
-    update = fn value ->
-      h = Map.update(value, player, 0, & &1)
-      {h, h}
-    end
-
-    hiscore = Agent.get_and_update(state.hiscore, update)
-
-    msg =
-      %{"type" => "join", "username" => player}
-      |> Map.put("hiscore", hiscore)
-
+    msg = %{"type" => "join", "username" => player}
     {:reply, {:text, Jason.encode!(msg)}, state}
   end
 
@@ -88,17 +99,9 @@ defmodule Zero.Kiosk.Websocket do
   end
 
   def websocket_info({:game_over, winner}, state) do
-    update = fn value ->
-      h = Map.update(value, winner, 1, &(&1 + 1))
-      {h, h}
-    end
-
-    hiscore = Agent.get_and_update(state.hiscore, update)
-
     msg =
       send_update_msg("game_over", state.name)
       |> Map.put("winner", winner)
-      |> Map.put("hiscore", hiscore)
 
     {:reply, {:text, Jason.encode!(msg)}, state}
   end
@@ -150,30 +153,35 @@ defmodule Zero.Kiosk.Websocket do
   end
 
   def websocket_info(info, state) do
-    Logger.info("kiosk info => #{inspect(info)}")
+    Logger.info("info => #{inspect(info)}")
     {:ok, state}
   end
 
   def websocket_terminate(reason, _state) do
-    Logger.info("kiosk reason => #{inspect(reason)}")
+    Logger.info("reason => #{inspect(reason)}")
     :ok
   end
 
   defp send_update_msg(event, name) do
     %{
       "type" => event,
-      "shown" => get_card(Game.get_shown(name)),
-      "shown_color" => to_string(Game.color?(name)),
-      "players" => get_players(Game.players(name)),
-      "turn" => Game.whose_turn_is_it?(name),
-      "deck" => Game.deck_cards_num(name)
+      "hand" => get_cards(ZeroGame.get_hand(name)),
+      "shown" => get_card(ZeroGame.get_shown(name)),
+      "shown_color" => to_string(ZeroGame.color?(name)),
+      "players" => get_players(ZeroGame.players(name)),
+      "turn" => ZeroGame.whose_turn_is_it?(name),
+      "deck" => ZeroGame.deck_cards_num(name)
     }
   end
 
-  defp get_card(nil), do: ["", "/img/cards/backside.png"]
-
   defp get_card({color, type}) do
     [to_string(color), "/img/cards/#{color}#{type}.png"]
+  end
+
+  defp get_cards(cards) do
+    for {_k, card} <- cards do
+      get_card(card)
+    end
   end
 
   defp get_players(players) do
@@ -182,62 +190,80 @@ defmodule Zero.Kiosk.Websocket do
     end
   end
 
-  defp process_data(%{"type" => "ping"}, state) do
-    {:reply, {:text, Jason.encode!(%{"type" => "pong"})}, state}
-  end
-
   defp process_data(%{"type" => "create"}, state) do
     name = UUID.uuid4()
-    {:ok, _game_pid} = Game.start(name)
+    {:ok, _game_pid} = ZeroGame.start(name)
     msg = %{"type" => "id", "id" => name}
     state = %{state | name: name}
-    pid = EventManager.get_pid(name)
-    GenStage.start_link(@event_listen, [pid, self()])
     {:reply, {:text, Jason.encode!(msg)}, state}
   end
 
-  defp process_data(%{"type" => "listen", "name" => name}, state) do
-    if not Game.exists?(name) do
-      {:ok, _game_pid} = Game.start(name)
-    end
+  defp process_data(
+         %{"type" => "join", "name" => name, "username" => username},
+         state
+       ) do
+    if ZeroGame.exists?(name) do
+      pid = EventManager.get_pid(name)
+      username = String.trim(username)
+      GenStage.start_link(__MODULE__, [pid, self()])
 
-    state = %{state | name: name}
-    pid = EventManager.get_pid(name)
-
-    msg =
-      if Game.is_started?(name) do
-        send_update_msg("dealt", name)
-      else
-        players = get_players(Game.players(name))
-
-        update = fn player ->
-          Agent.update(
-            state.hiscore,
-            fn value ->
-              Map.update(value, player, 0, & &1)
-            end
-          )
+      if not ZeroGame.is_game_over?(name) do
+        # FIXME: put this process under supervision tree, registry or some way
+        #        to ensure it's not added again and again.
+        for {player, _} <- ZeroGame.players(name), player != username do
+          send(self(), {:join, player})
         end
 
-        Enum.each(players, update)
+        ZeroGame.join(name, username)
+        {:ok, %{state | name: name}}
+      else
+        ZeroGame.restart(name)
+        {:ok, state}
+      end
+    else
+      Logger.warn("doesn't exist #{inspect(name)}")
+      msg = %{"type" => "notfound", "error" => true}
+      {:reply, {:text, Jason.encode!(msg)}, state}
+    end
+  end
 
-        %{"type" => "id", "id" => name}
-        |> Map.put("players", players)
+  defp process_data(%{"type" => "deal"}, %{name: name} = state) do
+    ZeroGame.deal(name)
+    {:ok, state}
+  end
+
+  defp process_data(%{"type" => "play", "card" => card, "color" => color}, state) do
+    color =
+      case color do
+        "red" -> :red
+        "blue" -> :blue
+        "yellow" -> :yellow
+        "green" -> :green
       end
 
-    GenStage.start_link(@event_listen, [pid, self()])
-    {:reply, {:text, Jason.encode!(msg)}, state}
+    ZeroGame.play(state.name, card, color)
+    {:ok, state}
+  end
+
+  defp process_data(%{"type" => "pick-from-deck"}, state) do
+    ZeroGame.pick_from_deck(state.name)
+    {:ok, state}
+  end
+
+  defp process_data(%{"type" => "pass"}, state) do
+    ZeroGame.pass(state.name)
+    {:ok, state}
   end
 
   defp process_data(%{"type" => "restart"}, state) do
-    Game.restart(state.name)
+    ZeroGame.restart(state.name)
     {:ok, state}
   end
 
   defp process_data(%{"type" => "bot", "name" => botname}, state) do
     botname = String.trim(botname)
 
-    if Game.valid_name?(state.name, botname) do
+    if ZeroGame.valid_name?(state.name, botname) do
       Bot.start_link(state.name, botname)
     end
 

@@ -47,9 +47,9 @@ end
 # will be used by default
 
 release :zero do
-  set version: current_version(:zero)
+  set version: current_version(:zero_game)
   set applications: [
-    :runtime_tools
+    :runtime_tools, :zero_web, :zero_console, :zero_game
   ]
 end
 

@@ -5,4 +5,4 @@ config :etag_plug,
   methods: ["GET"],
   status_codes: [200]
 
-config :zero, port: 4015
+config :zero_web, port: 4015

@@ -1,4 +1,4 @@
-defmodule Zero.Kiosk.Event do
+defmodule ZeroWeb.Kiosk.Event do
   use GenStage
   require Logger
 

@@ -1,8 +1,8 @@
-defmodule Zero.Router do
+defmodule ZeroWeb.Router do
   use Plug.Router
 
   plug(Plug.Logger, log: :debug)
-  plug(Plug.Static, from: {:zero, "priv/static"}, at: "/")
+  plug(Plug.Static, from: {:zero_web, "priv/static"}, at: "/")
 
   plug(Plug.Parsers,
     parsers: [:json],
@@ -15,17 +15,17 @@ defmodule Zero.Router do
   # plug ETag.Plug
 
   get "/" do
-    priv_dir = :code.priv_dir(:zero)
+    priv_dir = :code.priv_dir(:zero_web)
     send_file(conn, 200, "#{priv_dir}/static/index.html")
   end
 
   get "/kiosk" do
-    priv_dir = :code.priv_dir(:zero)
+    priv_dir = :code.priv_dir(:zero_web)
     send_file(conn, 200, "#{priv_dir}/static/kiosk.html")
   end
 
   get "/kiosk/:id" do
-    priv_dir = :code.priv_dir(:zero)
+    priv_dir = :code.priv_dir(:zero_web)
     send_file(conn, 200, "#{priv_dir}/static/kiosk.html")
   end
 
@@ -49,7 +49,7 @@ defmodule Zero.Router do
   end
 
   get "/:id" do
-    priv_dir = :code.priv_dir(:zero)
+    priv_dir = :code.priv_dir(:zero_web)
     send_file(conn, 200, "#{priv_dir}/static/index.html")
   end
 

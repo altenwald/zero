@@ -1,44 +1,46 @@
-defmodule Zero.Bot do
-  require Logger
-  alias Zero.{Game, EventManager}
-
+defmodule ZeroGame.Bot do
   use GenStage
 
+  require Logger
+
+  alias ZeroGame.EventManager
+
   @time_to_think 1_000
-  @colors ~w(red, green, blue, yellow)a
+  @colors ~w(red green blue yellow)a
 
   defmodule State do
+    @moduledoc false
     defstruct [:game, :username]
   end
 
-  def start_link(game \\ Zero, username \\ "timmy") do
+  def start_link(game \\ ZeroGame, username \\ "timmy") do
     pid = EventManager.get_pid(game)
     GenStage.start_link(__MODULE__, [pid, game, username])
   end
 
-  @impl true
+  @impl GenStage
   def init([producer, game, username]) do
     state = %State{game: game, username: username}
-    Game.join(game, username)
-    Process.monitor(Game.get_pid(game))
+    ZeroGame.join(game, username)
+    Process.monitor(ZeroGame.get_pid(game))
     {:consumer, state, subscribe_to: [producer]}
   end
 
-  @impl true
+  @impl GenStage
   def handle_events(events, _from, state) do
-    List.foldl(events, {:noreply, [], state}, fn
+    Enum.reduce(events, {:noreply, [], state}, fn
       event, {:noreply, [], state} -> process_event(event, state)
       _event, result -> result
     end)
   end
 
-  @impl true
+  @impl GenStage
   def handle_info({:DOWN, _ref, :process, _pid, _reason}, state) do
     {:stop, :normal, state}
   end
 
   defp process_event(:dealt, state) do
-    if Game.is_my_turn?(state.game) do
+    if ZeroGame.is_my_turn?(state.game) do
       Process.sleep(@time_to_think)
       play(state.username, state.game)
     end
@@ -53,7 +55,9 @@ defmodule Zero.Bot do
     {:noreply, [], state}
   end
 
-  defp process_event({:turn, _other, _previous}, state), do: {:noreply, [], state}
+  defp process_event({:turn, _other, _previous}, state) do
+    {:noreply, [], state}
+  end
 
   defp process_event({:game_over, winner}, state) do
     Logger.debug("[#{state.username}] game over, winner is #{winner}")
@@ -67,10 +71,10 @@ defmodule Zero.Bot do
   end
 
   defp play(username, game, tries \\ 2) do
-    {_color, shown_type} = Game.get_shown(game)
-    shown_color = Game.color?(game)
+    {_color, shown_type} = ZeroGame.get_shown(game)
+    shown_color = ZeroGame.color?(game)
     Logger.debug("[#{username}] the show card is #{shown_color} color and #{shown_type} type")
-    hand = Game.get_hand(game)
+    hand = ZeroGame.get_hand(game)
     Logger.debug("[#{username}] my hand is #{inspect(hand)}")
 
     options =
@@ -93,35 +97,36 @@ defmodule Zero.Bot do
     case options do
       [{i, :special, _} = card | _] ->
         Logger.debug("[#{username}] playing special one: #{inspect(card)}")
-        Game.play(game, i, choose_color(hand))
+        ZeroGame.play(game, i, choose_color(hand))
 
       [{i, color, _} = card | _] ->
         Logger.debug("[#{username}] playing card: #{inspect(card)}")
-        Game.play(game, i, color)
+        ZeroGame.play(game, i, color)
 
       [] when tries > 0 ->
         Logger.debug("[#{username}] no card available. Picking up!")
-        Game.pick_from_deck(game)
+        ZeroGame.pick_from_deck(game)
         play(username, game, tries - 1)
 
       [] ->
         Logger.debug("[#{username}] no card. No pickup up. Passing!")
-        Game.pass(game)
+        ZeroGame.pass(game)
     end
   end
 
   defp choose_color(hand) do
-    hand
-    |> Enum.map(fn {_, {color, _}} -> color end)
-    |> Enum.filter(&(&1 in @colors))
-    |> Enum.reduce(
-      %{red: 0, green: 0, blue: 0, yellow: 0},
-      fn color, acc -> Map.update(acc, color, 1, &(&1 + 1)) end
-    )
-    |> Enum.sort_by(&elem(&1, 1), &>=/2)
-    |> log_options()
-    |> hd()
-    |> elem(0)
+    [{color, _} | _] =
+      hand
+      |> Enum.map(fn {_, {color, _}} -> color end)
+      |> Enum.filter(&(&1 in @colors))
+      |> Enum.reduce(
+        %{red: 0, green: 0, blue: 0, yellow: 0},
+        fn color, acc -> Map.update(acc, color, 1, &(&1 + 1)) end
+      )
+      |> Enum.sort_by(&elem(&1, 1), &>=/2)
+      |> log_options()
+
+    color
   end
 
   defp log_options(options) do

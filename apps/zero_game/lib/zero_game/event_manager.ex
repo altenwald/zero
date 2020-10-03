@@ -1,16 +1,16 @@
-defmodule Zero.EventManager do
+defmodule ZeroGame.EventManager do
   use GenStage
 
   defp via(name) do
-    {:via, Registry, {Zero.EventManager.Registry, name}}
+    {:via, Registry, {ZeroGame.EventManager.Registry, name}}
   end
 
   def exists?(name) do
-    [] != Registry.lookup(Zero.EventManager.Registry, name)
+    [] != Registry.lookup(ZeroGame.EventManager.Registry, name)
   end
 
   def get_pid(name) do
-    [{pid, nil}] = Registry.lookup(Zero.EventManager.Registry, name)
+    [{pid, nil}] = Registry.lookup(ZeroGame.EventManager.Registry, name)
     pid
   end
 
@@ -28,12 +28,11 @@ defmodule Zero.EventManager do
     {:producer, [], dispatcher: GenStage.BroadcastDispatcher}
   end
 
-  def handle_cast({:notify, event}, events) do
-    {:noreply, [event], events}
+  def handle_cast({:notify, event}, state) do
+    {:noreply, [event], state}
   end
 
-  def handle_demand(demand, events) do
-    {to_dispatch, to_keep} = Enum.split(events, demand)
-    {:noreply, to_dispatch, to_keep}
+  def handle_demand(_demand, state) do
+    {:noreply, [], state}
   end
 end
