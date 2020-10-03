@@ -48,6 +48,7 @@ function connect() {
             default:
                 set_game_id(uri.slice(1));
         }
+        send({type: "deck", name: deck});
         if (!username) {
             $("#onBoardingModal").modal('show');
             $("#dealingModal").modal('hide');
@@ -57,6 +58,7 @@ function connect() {
             $("#onBoardingModal").modal('hide');
             if (!dealt) {
                 $("#dealingModal").modal('show');
+                $("#bot-name").focus();
             } else {
                 $("#dealingModal").modal('hide');
             }
@@ -313,6 +315,7 @@ $(document).ready(function(){
         var user = $("#username").val();
         $("#onBoardingModal").modal('hide');
         $("#dealingModal").modal('show');
+        $("#bot-name").focus();
         username = user;
         send({type: "join", name: game_id, username: user});
     });
@@ -371,7 +374,11 @@ $(document).ready(function(){
     $("#bot-name").on("keydown", function(event) {
         var keyCode = event.keyCode || event.which;
         if (keyCode == 13) {
-            $("#bot-add").trigger("click");
+            if ($("#bot-name").val().trim() == "") {
+                $("#deal").trigger("click");
+            } else {
+                $("#bot-add").trigger("click");
+            }
             return false;
         }
     });

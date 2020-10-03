@@ -151,6 +151,10 @@ defmodule ZeroGame do
     {:keep_state_and_data, [{:reply, from, players}]}
   end
 
+  def waiting_players({:call, from}, {:valid_name?, ""}, _game) do
+    {:keep_state_and_data, [{:reply, from, false}]}
+  end
+
   def waiting_players({:call, from}, {:valid_name?, username}, game) do
     reply =
       not Enum.any?(game.players, fn

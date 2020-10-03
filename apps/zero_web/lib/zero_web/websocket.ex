@@ -1,48 +1,35 @@
 defmodule ZeroWeb.Websocket do
-  use GenStage
-
   require Logger
 
   alias ZeroGame
-  alias ZeroGame.{EventManager, Bot}
+  alias ZeroGame.Bot
   alias ZeroWeb.Request
 
   @default_deck "timmy"
 
-  def init([producer, game]) do
-    Process.monitor(game)
-    {:consumer, game, subscribe_to: [producer]}
-  end
-
-  def handle_info({:DOWN, _ref, :process, _pid, _reason}, state) do
-    {:stop, :normal, state}
-  end
-
-  def handle_events(events, _from, game) do
-    Logger.debug("events => #{inspect(events)}")
-
-    for event <- events do
-      Logger.debug("sending event #{inspect(event)} to #{inspect(game)}")
-      send(game, event)
-    end
-
-    {:noreply, [], game}
-  end
-
   @behaviour :cowboy_websocket
 
+  @impl :cowboy_websocket
   def init(req, opts) do
     Logger.info("[websocket] init req => #{inspect(req)}")
     remote_ip = Request.remote_ip(req)
     {:cowboy_websocket, req, [{:remote_ip, remote_ip} | opts]}
   end
 
+  @impl :cowboy_websocket
   def websocket_init(remote_ip: remote_ip) do
-    vsn = to_string(Application.spec(:zero_web)[:vsn])
-    send(self(), {:send, Jason.encode!(%{"type" => "vsn", "vsn" => vsn})})
-    {:ok, %{name: nil, remote_ip: remote_ip, deck: @default_deck}}
+    vsn = ZeroWeb.Application.vsn()
+    reply = Jason.encode!(%{"type" => "vsn", "vsn" => vsn})
+    state = %{name: nil, remote_ip: remote_ip, deck: @default_deck}
+    {:reply, {:text, reply}, state}
   end
 
+  @doc """
+  The information received by this function is sent from the browser
+  directly to the websocket to be handle by the websocket. Most of the
+  actions have direct impact into the game.
+  """
+  @impl :cowboy_websocket
   def websocket_handle({:text, msg}, state) do
     msg
     |> Jason.decode!()
@@ -53,6 +40,12 @@ defmodule ZeroWeb.Websocket do
     {:reply, {:text, "eh?"}, state}
   end
 
+  @doc """
+  The information received by websocket is from "info" is sent mainly
+  by the `ZeroWeb.Listener` consumer regarding the information received
+  from the Game where we did our subscription.
+  """
+  @impl :cowboy_websocket
   def websocket_info({:send, data}, state) do
     {:reply, {:text, data}, state}
   end
@@ -148,11 +141,6 @@ defmodule ZeroWeb.Websocket do
     {:ok, state}
   end
 
-  def websocket_terminate(reason, _state) do
-    Logger.info("reason => #{inspect(reason)}")
-    :ok
-  end
-
   defp send_update_msg(event, name, deck) do
     %{
       "type" => event,
@@ -194,19 +182,17 @@ defmodule ZeroWeb.Websocket do
          state
        ) do
     if ZeroGame.exists?(name) do
-      pid = EventManager.get_pid(name)
+      ZeroWeb.Application.start_listener(name, self())
       username = String.trim(username)
-      GenStage.start_link(__MODULE__, [pid, self()])
 
       if not ZeroGame.is_game_over?(name) do
-        # FIXME: put this process under supervision tree, registry or some way
-        #        to ensure it's not added again and again.
-        for {player, _} <- ZeroGame.players(name), player != username do
-          send(self(), {:join, player})
-        end
+        replies =
+          for {player, _} <- ZeroGame.players(name), player != username do
+            {:text, Jason.encode!(%{"type" => "join", "username" => player})}
+          end
 
         ZeroGame.join(name, username)
-        {:ok, %{state | name: name}}
+        {:reply, replies, %{state | name: name}}
       else
         ZeroGame.restart(name)
         {:ok, state}

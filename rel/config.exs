@@ -47,7 +47,7 @@ end
 # will be used by default
 
 release :zero do
-  set version: current_version(:zero_game)
+  set version: Mix.Project.config[:version]
   set applications: [
     :runtime_tools, :zero_web, :zero_console, :zero_game
   ]
