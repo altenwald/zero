@@ -32,6 +32,21 @@
       <h5 class="my-0 mr-md-auto font-weight-normal">Zero Game <span id="vsn"></span></h5>
     </div>
     <div class="container text-center">
+      <a id="game-hiscore" class="btn btn-outline-primary" href="#" data-toggle="modal" data-target="#hiscoreModal" title="HiScore">
+        <i class="fas fa-clipboard-list"></i>
+      </a>
+      <a id="game-howtoplay" class="btn btn-outline-primary" href="#" data-toggle="modal" data-target="#howToPlayModal" title="Help">
+        <i class="fas fa-life-ring"></i>
+      </a>
+      <div class="dropdown">
+        <button class="btn btn-outline-primary" type="button" id="dropdownMenuButton" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+          <img id="fa-deck" src="/img/deck.png"/>
+        </button>
+        <div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
+          <a class="dropdown-item" href="#" id="deck-timmy">Timmy Adventures</a>
+          <a class="dropdown-item" href="#" id="deck-uno">Uno</a>
+        </div>
+      </div>
       <div id="game-deck">Cards in Deck: <span>110</span></div>
       <div id="game-msg">
         <strong>Waiting for players...</strong>
@@ -77,9 +92,33 @@
                   <th>Win</th>
                 </tr>
               </thead>
+              <tbody id="list-hiscore-gameover">
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="modal" id="hiscoreModal" tabindex="-1" role="dialog" aria-labelledby="hiscoreLabel" aria-hidden="true" data-keyboard="true" data-backdrop="true">
+      <div class="model-dialog" role="document">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="hiscoreLabel">Game Over</h5>
+          </div>
+          <div class="modal-body">
+            <table class="table table-sm">
+              <thead class="thead-light">
+                <tr>
+                  <th>Player</th>
+                  <th>Win</th>
+                </tr>
+              </thead>
               <tbody id="list-hiscore">
               </tbody>
             </table>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
           </div>
         </div>
       </div>
@@ -101,6 +140,30 @@
                 <button type="button" class="btn btn-default" id="bot-add">Add Bot</button>
               </div>
             </div>
+        </div>
+      </div>
+    </div>
+    <div class="modal" id="howToPlayModal" tabindex="-1"  role="dialog" aria-labelledby="howToPlayLabel" aria-hidden="true" data-keyboard="true" data-backdrop="true">
+      <div class="modal-dialog" role="document">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="howToPlayLabel">How to Play</h5>
+          </div>
+          <div class="modal-body">
+            <p>If you want to make suggestions or obtain the source code you can go to <a href="https://github.com/altenwald/zero">Github site</a> and create a issue, fork the code to send us modifications or fixes or whatever.</p>
+            <p>Don't forget to give as an start!</p>
+            <iframe src="https://ghbtns.com/github-btn.html?user=altenwald&repo=zero&type=star&count=true&size=large" frameborder="0" scrolling="0" width="170" height="30" title="GitHub"></iframe>
+            <p>The Kiosk only shows the information of the shown card, the table of the turns, the log view and when the match is over, the information about the high scores for the rounds.</p>
+            <p>If you want to play with the same people again using the same high scores, you can press the Restart button when the match is over:</p>
+            <p><button type="button" class="btn btn-primary">Restart</button></p>
+            <h2>Donations</h2>
+            <p>In the same way we will be pleased receiving donations:</p>
+            <a target="_blank" href="https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=RC5F8STDA6AXE"><img src="https://www.paypalobjects.com/en_US/GB/i/btn/btn_donateCC_LG.gif" alt="paypal"></a>
+            <p>Thanks! and Enjoy!</p>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+          </div>
         </div>
       </div>
     </div>

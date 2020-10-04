@@ -1,4 +1,4 @@
-defmodule ZeroWeb.Listener do
+defmodule ZeroWeb.Consumer do
   use GenStage, restart: :transient
 
   require Logger

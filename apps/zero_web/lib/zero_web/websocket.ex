@@ -42,7 +42,7 @@ defmodule ZeroWeb.Websocket do
 
   @doc """
   The information received by websocket is from "info" is sent mainly
-  by the `ZeroWeb.Listener` consumer regarding the information received
+  by the `ZeroWeb.Consumer` consumer regarding the information received
   from the Game where we did our subscription.
   """
   @impl :cowboy_websocket
@@ -169,6 +169,10 @@ defmodule ZeroWeb.Websocket do
     end
   end
 
+  defp process_data(%{"type" => "ping"}, state) do
+    {:reply, {:text, Jason.encode!(%{"type" => "pong"})}, state}
+  end
+
   defp process_data(%{"type" => "create"}, state) do
     name = UUID.uuid4()
     {:ok, _game_pid} = ZeroGame.start(name)
@@ -182,7 +186,7 @@ defmodule ZeroWeb.Websocket do
          state
        ) do
     if ZeroGame.exists?(name) do
-      ZeroWeb.Application.start_listener(name, self())
+      ZeroWeb.Application.start_consumer(name, self())
       username = String.trim(username)
 
       if not ZeroGame.is_game_over?(name) do

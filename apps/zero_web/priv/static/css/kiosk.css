@@ -22,3 +22,11 @@ ul#log {
   list-style: none;
   text-align: left;
 }
+
+.dropdown {
+  display: inline-block;
+}
+
+img#fa-deck {
+  width: 25px;
+}

@@ -4,6 +4,7 @@ var username;
 var dealt = false;
 var refresh_hand = false;
 var card;
+var timer;
 var deck = "timmy"
 
 function disconnected(should_i_reconnect) {
@@ -18,9 +19,9 @@ function disconnected(should_i_reconnect) {
 function change_deck(from, to) {
     $("img").each(function (i, e) {
         var attr = $(e).attr("src");
-        if (attr.startsWith("/img/cards/" + from) || attr.startsWith("img/cards/" + from)) {
+        if (attr.startsWith("/img/cards/" + from)) {
             var pngfile = attr.split("/").reverse()[0];
-            $(e).attr("src", "img/cards/" + to + "/" + pngfile);
+            $(e).attr("src", "/img/cards/" + to + "/" + pngfile);
         }
     });
 }
@@ -64,6 +65,12 @@ function connect() {
             }
         }
         $("#game-msg").html("");
+        if (timer) {
+            clearInterval(timer);
+        }
+        timer = setInterval(function(){
+            send({type: "ping"});
+        }, 10000);
     };
     ws.onerror = function(message){
         console.error("onerror", message);

@@ -11,7 +11,7 @@ defmodule ZeroWeb.Application do
 
   @port 1234
 
-  @listener_sup ZeroWeb.Listeners
+  @consumer_sup ZeroWeb.Consumers
 
   def start(_type, _args) do
     # List all child processes to be supervised
@@ -23,7 +23,7 @@ defmodule ZeroWeb.Application do
         plug: ZeroWeb.Router,
         options: [port: port_number, dispatch: dispatch()]
       ),
-      {DynamicSupervisor, strategy: :one_for_one, name: @listener_sup}
+      {DynamicSupervisor, strategy: :one_for_one, name: @consumer_sup}
     ]
 
     Logger.info("[app] initiated application")
@@ -32,10 +32,10 @@ defmodule ZeroWeb.Application do
     Supervisor.start_link(children, opts)
   end
 
-  def start_listener(name, websocket) do
+  def start_consumer(name, websocket) do
     producer = EventManager.get_pid(name)
     args = [producer, websocket]
-    DynamicSupervisor.start_child(@listener_sup, {ZeroWeb.Listener, args})
+    DynamicSupervisor.start_child(@consumer_sup, {ZeroWeb.Consumer, args})
   end
 
   def vsn do

@@ -1,6 +1,17 @@
 var ws;
 var game_id;
 var timer;
+var deck = "timmy";
+
+function change_deck(from, to) {
+  $("img").each(function (i, e) {
+      var attr = $(e).attr("src");
+      if (attr.startsWith("/img/cards/" + from)) {
+          var pngfile = attr.split("/").reverse()[0];
+          $(e).attr("src", "/img/cards/" + to + "/" + pngfile);
+      }
+  });
+}
 
 function set_game_id(id) {
   game_id = id;
@@ -57,6 +68,7 @@ function update_hiscore(players) {
     html += "<td>" + players[player] + "</td></tr>";
   }
   $("#list-hiscore").html(html);
+  $("#list-hiscore-gameover").html(html);
 }
 
 function update_shown_card(data) {
@@ -109,6 +121,7 @@ function connect() {
         set_game_id(parts[parts.length-1]);
         send({type: "listen", name: game_id});
     }
+    send({type: "deck", name: deck});
     $("#dealingModal").modal('show');
     $("#game-msg").html("");
     if (timer) {
@@ -157,6 +170,10 @@ function connect() {
       case "turn":
       case "pick_from_deck":
         update_game(data);
+        break;
+      case "hiscore":
+        update_hiscore(data.hiscore);
+        $("#hiscoreModal").modal('show');
         break;
       case "game_over":
         update_hiscore(data.hiscore);
@@ -231,6 +248,24 @@ $(document).ready(function(){
   $("#game-pass").on("click", function(event) {
     event.preventDefault();
     send({type: "pass"});
+  });
+  $("#game-hiscore").on("click", function(event) {
+    event.preventDefault();
+    send({type: "hiscore"});
+  });
+  $("#deck-timmy").on("click", function(event) {
+    event.preventDefault();
+    var old_deck = deck;
+    deck = "timmy";
+    change_deck(old_deck, deck);
+    send({type: "deck", name: deck});
+  });
+  $("#deck-uno").on("click", function(event) {
+    event.preventDefault();
+    var old_deck = deck;
+    deck = "uno";
+    change_deck(old_deck, deck);
+    send({type: "deck", name: deck});
   });
   $("#bot-add").on("click", function(event){
     event.preventDefault();
