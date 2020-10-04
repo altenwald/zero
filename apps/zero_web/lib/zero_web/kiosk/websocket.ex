@@ -57,16 +57,14 @@ defmodule ZeroWeb.Kiosk.Websocket do
 
   def websocket_info({:join, player}, state) do
     update = fn value ->
+      Logger.debug("player => #{inspect(player)}")
       h = Map.update(value, player, 0, & &1)
       {h, h}
     end
 
     hiscore = Agent.get_and_update(state.hiscore, update)
-
-    msg =
-      %{"type" => "join", "username" => player}
-      |> Map.put("hiscore", hiscore)
-
+    msg = %{"type" => "join", "username" => player, "hiscore" => hiscore}
+    Logger.debug("msg => #{inspect(msg)}")
     {:reply, {:text, Jason.encode!(msg)}, state}
   end
 
@@ -208,25 +206,24 @@ defmodule ZeroWeb.Kiosk.Websocket do
 
     state = %{state | name: name}
 
+    players = ZeroGame.players(name)
+
+    update = fn {player, _num_cards} ->
+      Agent.update(
+        state.hiscore,
+        fn value ->
+          Map.update(value, player, 0, & &1)
+        end
+      )
+    end
+
+    Enum.each(players, update)
+
     msg =
       if ZeroGame.is_started?(name) do
         send_update_msg("dealt", name, state.deck)
       else
-        players = get_players(ZeroGame.players(name))
-
-        update = fn player ->
-          Agent.update(
-            state.hiscore,
-            fn value ->
-              Map.update(value, player, 0, & &1)
-            end
-          )
-        end
-
-        Enum.each(players, update)
-
-        %{"type" => "id", "id" => name}
-        |> Map.put("players", players)
+        %{"type" => "id", "id" => name, "players" => players}
       end
 
     ZeroWeb.Application.start_consumer(name, self())

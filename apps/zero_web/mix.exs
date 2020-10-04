@@ -1,10 +1,12 @@
 defmodule ZeroWeb.MixProject do
   use Mix.Project
 
+  @version "0.7.3"
+
   def project do
     [
       app: :zero_web,
-      version: "0.7.2",
+      version: @version,
       build_path: "../../_build",
       config_path: "../../config/config.exs",
       deps_path: "../../deps",
