@@ -1,8 +1,7 @@
 defmodule ZeroWeb.Kiosk.Websocket do
   require Logger
 
-  alias ZeroGame
-  alias ZeroGame.Bot
+  alias ZeroGame.{Bot, Game}
   alias ZeroWeb.Request
 
   @default_deck "timmy"
@@ -161,11 +160,11 @@ defmodule ZeroWeb.Kiosk.Websocket do
   defp send_update_msg(event, name, deck) do
     %{
       "type" => event,
-      "shown" => get_card(ZeroGame.get_shown(name), deck),
-      "shown_color" => to_string(ZeroGame.color?(name)),
-      "players" => get_players(ZeroGame.players(name)),
-      "turn" => ZeroGame.whose_turn_is_it?(name),
-      "deck" => ZeroGame.deck_cards_num(name)
+      "shown" => get_card(Game.get_shown(name), deck),
+      "shown_color" => to_string(Game.color?(name)),
+      "players" => get_players(Game.players(name)),
+      "turn" => Game.whose_turn_is_it?(name),
+      "deck" => Game.deck_cards_num(name)
     }
   end
 
@@ -192,7 +191,7 @@ defmodule ZeroWeb.Kiosk.Websocket do
 
   defp process_data(%{"type" => "create"}, state) do
     name = UUID.uuid4()
-    {:ok, _game_pid} = ZeroGame.start(name)
+    {:ok, _game_pid} = Game.start(name)
     msg = %{"type" => "id", "id" => name}
     state = %{state | name: name}
     ZeroWeb.Application.start_consumer(name, self())
@@ -200,13 +199,13 @@ defmodule ZeroWeb.Kiosk.Websocket do
   end
 
   defp process_data(%{"type" => "listen", "name" => name}, state) do
-    if not ZeroGame.exists?(name) do
-      {:ok, _game_pid} = ZeroGame.start(name)
+    if not Game.exists?(name) do
+      {:ok, _game_pid} = Game.start(name)
     end
 
     state = %{state | name: name}
 
-    players = ZeroGame.players(name)
+    players = Game.players(name)
 
     update = fn {player, _num_cards} ->
       Agent.update(
@@ -220,7 +219,7 @@ defmodule ZeroWeb.Kiosk.Websocket do
     Enum.each(players, update)
 
     msg =
-      if ZeroGame.is_started?(name) do
+      if Game.is_started?(name) do
         send_update_msg("dealt", name, state.deck)
       else
         %{"type" => "id", "id" => name, "players" => players}
@@ -231,7 +230,7 @@ defmodule ZeroWeb.Kiosk.Websocket do
   end
 
   defp process_data(%{"type" => "restart"}, state) do
-    ZeroGame.restart(state.name)
+    Game.restart(state.name)
     {:ok, state}
   end
 
@@ -244,7 +243,7 @@ defmodule ZeroWeb.Kiosk.Websocket do
   defp process_data(%{"type" => "bot", "name" => botname}, state) do
     botname = String.trim(botname)
 
-    if ZeroGame.valid_name?(state.name, botname) do
+    if Game.valid_name?(state.name, botname) do
       Bot.start_link(state.name, botname)
     end
 

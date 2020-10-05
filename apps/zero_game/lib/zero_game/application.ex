@@ -8,7 +8,7 @@ defmodule ZeroGame.Application do
 
   def start(_type, _args) do
     children = [
-      {Registry, keys: :unique, name: ZeroGame.Registry},
+      {Registry, keys: :unique, name: ZeroGame.Game.Registry},
       {Registry, keys: :unique, name: ZeroGame.EventManager.Registry},
       {Registry, keys: :unique, name: ZeroGame.Supervisor.Registry},
       {DynamicSupervisor, strategy: :one_for_one, name: ZeroGame.Games}

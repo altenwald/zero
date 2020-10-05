@@ -3,7 +3,7 @@ defmodule ZeroGame.Bot do
 
   require Logger
 
-  alias ZeroGame.EventManager
+  alias ZeroGame.{EventManager, Game}
 
   @time_to_think 1_000
   @colors ~w(red green blue yellow)a
@@ -21,8 +21,8 @@ defmodule ZeroGame.Bot do
   @impl GenStage
   def init([producer, game, username]) do
     state = %State{game: game, username: username}
-    ZeroGame.join(game, username)
-    Process.monitor(ZeroGame.get_pid(game))
+    Game.join(game, username)
+    Process.monitor(Game.get_pid(game))
     {:consumer, state, subscribe_to: [producer]}
   end
 
@@ -40,7 +40,7 @@ defmodule ZeroGame.Bot do
   end
 
   defp process_event(:dealt, state) do
-    if ZeroGame.is_my_turn?(state.game) do
+    if Game.is_my_turn?(state.game) do
       Process.sleep(@time_to_think)
       play(state.username, state.game)
     end
@@ -71,10 +71,10 @@ defmodule ZeroGame.Bot do
   end
 
   defp play(username, game, tries \\ 2) do
-    {_color, shown_type} = ZeroGame.get_shown(game)
-    shown_color = ZeroGame.color?(game)
+    {_color, shown_type} = Game.get_shown(game)
+    shown_color = Game.color?(game)
     Logger.debug("[#{username}] the show card is #{shown_color} color and #{shown_type} type")
-    hand = ZeroGame.get_hand(game)
+    hand = Game.get_hand(game)
     Logger.debug("[#{username}] my hand is #{inspect(hand)}")
 
     options =
@@ -97,20 +97,20 @@ defmodule ZeroGame.Bot do
     case options do
       [{i, :special, _} = card | _] ->
         Logger.debug("[#{username}] playing special one: #{inspect(card)}")
-        ZeroGame.play(game, i, choose_color(hand))
+        Game.play(game, i, choose_color(hand))
 
       [{i, color, _} = card | _] ->
         Logger.debug("[#{username}] playing card: #{inspect(card)}")
-        ZeroGame.play(game, i, color)
+        Game.play(game, i, color)
 
       [] when tries > 0 ->
         Logger.debug("[#{username}] no card available. Picking up!")
-        ZeroGame.pick_from_deck(game)
+        Game.pick_from_deck(game)
         play(username, game, tries - 1)
 
       [] ->
         Logger.debug("[#{username}] no card. No pickup up. Passing!")
-        ZeroGame.pass(game)
+        Game.pass(game)
     end
   end
 
