@@ -1,5 +1,5 @@
 defmodule ZeroGame do
-  use GenStateMachine, callback_mode: :state_functions
+  use GenStateMachine, callback_mode: :state_functions, restart: :transient
 
   @card_colors [:blue, :red, :yellow, :green]
   @card_types [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, :reverse, :turn, :plus_2]
@@ -34,16 +34,12 @@ defmodule ZeroGame do
             pick_from_deck: @max_pick_from_deck,
             name: nil
 
-  def child_spec(init_args) do
-    %{
-      id: __MODULE__,
-      start: {__MODULE__, :start_link, [init_args]},
-      restart: :transient
-    }
-  end
-
   defp via(game) do
     {:via, Registry, {ZeroGame.Registry, game}}
+  end
+
+  defp sup_via(game) do
+    {:via, Registry, {ZeroGame.Supervisor.Registry, game}}
   end
 
   def start_link(name) do
@@ -51,7 +47,16 @@ defmodule ZeroGame do
   end
 
   def start(game) do
-    DynamicSupervisor.start_child(ZeroGame.Games, {__MODULE__, game})
+    children = [
+      {ZeroGame, game},
+      {EventManager, game}
+    ]
+    opts = [strategy: :one_for_one, name: sup_via(game)]
+    args = %{
+      id: __MODULE__,
+      start: {Supervisor, :start_link, [children, opts]}
+    }
+    DynamicSupervisor.start_child(ZeroGame.Games, args)
   end
 
   def exists?(game) do
@@ -94,7 +99,6 @@ defmodule ZeroGame do
 
   @impl true
   def init([name]) do
-    EventManager.start_link(name)
     game = %ZeroGame{deck: shuffle_cards(), name: name}
     {:ok, :waiting_players, game, [{:state_timeout, @max_menu_time, :game_over}]}
   end

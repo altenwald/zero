@@ -9,8 +9,9 @@ defmodule ZeroGame.Application do
   def start(_type, _args) do
     children = [
       {Registry, keys: :unique, name: ZeroGame.Registry},
-      {DynamicSupervisor, strategy: :one_for_one, name: ZeroGame.Games},
-      {Registry, keys: :unique, name: ZeroGame.EventManager.Registry}
+      {Registry, keys: :unique, name: ZeroGame.EventManager.Registry},
+      {Registry, keys: :unique, name: ZeroGame.Supervisor.Registry},
+      {DynamicSupervisor, strategy: :one_for_one, name: ZeroGame.Games}
     ]
 
     Logger.info("[app] initiated application")
