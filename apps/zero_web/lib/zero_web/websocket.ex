@@ -1,7 +1,7 @@
 defmodule ZeroWeb.Websocket do
   require Logger
 
-  alias ZeroGame.{Bot, Game}
+  alias ZeroGame.Bot
   alias ZeroWeb.Request
 
   @default_deck "timmy"
@@ -143,12 +143,12 @@ defmodule ZeroWeb.Websocket do
   defp send_update_msg(event, name, deck) do
     %{
       "type" => event,
-      "hand" => get_cards(Game.get_hand(name), deck),
-      "shown" => get_card(Game.get_shown(name), deck),
-      "shown_color" => to_string(Game.color?(name)),
-      "players" => get_players(Game.players(name)),
-      "turn" => Game.whose_turn_is_it?(name),
-      "deck" => Game.deck_cards_num(name)
+      "hand" => get_cards(ZeroGame.get_hand(name), deck),
+      "shown" => get_card(ZeroGame.get_shown(name), deck),
+      "shown_color" => to_string(ZeroGame.color?(name)),
+      "players" => get_players(ZeroGame.players(name)),
+      "turn" => ZeroGame.whose_turn_is_it?(name),
+      "deck" => ZeroGame.deck_cards_num(name)
     }
   end
 
@@ -174,7 +174,7 @@ defmodule ZeroWeb.Websocket do
 
   defp process_data(%{"type" => "create"}, state) do
     name = UUID.uuid4()
-    {:ok, _game_pid} = Game.start(name)
+    {:ok, _game_pid} = ZeroGame.start(name)
     msg = %{"type" => "id", "id" => name}
     state = %{state | name: name}
     {:reply, {:text, Jason.encode!(msg)}, state}
@@ -184,20 +184,20 @@ defmodule ZeroWeb.Websocket do
          %{"type" => "join", "name" => name, "username" => username},
          state
        ) do
-    if Game.exists?(name) do
+    if ZeroGame.exists?(name) do
       ZeroWeb.Application.start_consumer(name, self())
       username = String.trim(username)
 
-      if not Game.is_game_over?(name) do
+      if not ZeroGame.is_game_over?(name) do
         replies =
-          for {player, _} <- Game.players(name), player != username do
+          for {player, _} <- ZeroGame.players(name), player != username do
             {:text, Jason.encode!(%{"type" => "join", "username" => player})}
           end
 
-        Game.join(name, username)
+        ZeroGame.join(name, username)
         {:reply, replies, %{state | name: name}}
       else
-        Game.restart(name)
+        ZeroGame.restart(name)
         {:ok, state}
       end
     else
@@ -213,7 +213,7 @@ defmodule ZeroWeb.Websocket do
   end
 
   defp process_data(%{"type" => "deal"}, %{name: name} = state) do
-    Game.deal(name)
+    ZeroGame.deal(name)
     {:ok, state}
   end
 
@@ -226,29 +226,29 @@ defmodule ZeroWeb.Websocket do
         "green" -> :green
       end
 
-    Game.play(state.name, card, color)
+    ZeroGame.play(state.name, card, color)
     {:ok, state}
   end
 
   defp process_data(%{"type" => "pick-from-deck"}, state) do
-    Game.pick_from_deck(state.name)
+    ZeroGame.pick_from_deck(state.name)
     {:ok, state}
   end
 
   defp process_data(%{"type" => "pass"}, state) do
-    Game.pass(state.name)
+    ZeroGame.pass(state.name)
     {:ok, state}
   end
 
   defp process_data(%{"type" => "restart"}, state) do
-    Game.restart(state.name)
+    ZeroGame.restart(state.name)
     {:ok, state}
   end
 
   defp process_data(%{"type" => "bot", "name" => botname}, state) do
     botname = String.trim(botname)
 
-    if Game.valid_name?(state.name, botname) do
+    if ZeroGame.valid_name?(state.name, botname) do
       Bot.start_link(state.name, botname)
     end
 

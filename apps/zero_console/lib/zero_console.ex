@@ -5,7 +5,6 @@ defmodule ZeroConsole do
   use GenStage
 
   alias IO.ANSI
-  alias ZeroGame.{EventManager, Game}
 
   defp ask(prompt) do
     "#{prompt}> "
@@ -24,8 +23,8 @@ defmodule ZeroConsole do
   end
 
   def start(name \\ __MODULE__) do
-    Game.start(name)
-    pid = EventManager.get_pid(name)
+    ZeroGame.start(name)
+    pid = ZeroGame.get_event_manager_pid(name)
     GenStage.start_link(__MODULE__, [pid, self()])
     user = ask("name")
     waiting(name, user)
@@ -54,7 +53,7 @@ defmodule ZeroConsole do
   end
 
   def waiting(name, user) do
-    Game.join(name, user)
+    ZeroGame.join(name, user)
     IO.puts("Note that 'deal' should be made when everyone is onboarding.")
 
     case ask("deal? [Y/n]") do
@@ -62,13 +61,13 @@ defmodule ZeroConsole do
         waiting(name, user)
 
       _ ->
-        Game.deal(name)
+        ZeroGame.deal(name)
         playing(name, user)
     end
   end
 
   def playing(name \\ __MODULE__, user) do
-    case Game.get_shown(name) do
+    case ZeroGame.get_shown(name) do
       :game_over ->
         IO.puts("GAME OVER!")
 
@@ -76,21 +75,21 @@ defmodule ZeroConsole do
         IO.puts([ANSI.reset(), ANSI.clear()])
         IO.puts("Zero Game - #{vsn()}")
         IO.puts("--------------------")
-        draw_players(Game.players(name))
+        draw_players(ZeroGame.players(name))
 
         IO.puts([
           "\nShown --> (color: ",
-          print_color(Game.color?(name)),
+          print_color(ZeroGame.color?(name)),
           ")",
-          "\nIn deck: #{Game.deck_cards_num(name)}\n"
+          "\nIn deck: #{ZeroGame.deck_cards_num(name)}\n"
         ])
 
         draw_card(card)
         IO.puts("Your hand -->")
-        cards = Game.get_hand(name)
+        cards = ZeroGame.get_hand(name)
         draw_cards(cards)
 
-        if Game.is_my_turn?(name) do
+        if ZeroGame.is_my_turn?(name) do
           choose_option(name, user, cards)
         else
           IO.puts("waiting for your turn...")
@@ -104,11 +103,11 @@ defmodule ZeroConsole do
   defp choose_option(name, user, cards) do
     case ask("[P]ass [G]et pla[Y] [Q]uit") do
       "p" ->
-        Game.pass(name)
+        ZeroGame.pass(name)
         playing(name, user)
 
       "g" ->
-        Game.pick_from_deck(name)
+        ZeroGame.pick_from_deck(name)
         playing(name, user)
 
       "y" ->
@@ -120,7 +119,7 @@ defmodule ZeroConsole do
             _ -> nil
           end
 
-        Game.play(name, num, color)
+        ZeroGame.play(name, num, color)
         playing(name, user)
 
       "q" ->

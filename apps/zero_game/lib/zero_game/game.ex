@@ -37,25 +37,8 @@ defmodule ZeroGame.Game do
     {:via, Registry, {ZeroGame.Game.Registry, game}}
   end
 
-  defp sup_via(game) do
-    {:via, Registry, {ZeroGame.Supervisor.Registry, game}}
-  end
-
   def start_link(name) do
     GenStateMachine.start_link(__MODULE__, [name], name: via(name))
-  end
-
-  def start(game) do
-    children = [
-      {Game, game},
-      {EventManager, game}
-    ]
-    opts = [strategy: :one_for_one, name: sup_via(game)]
-    args = %{
-      id: __MODULE__,
-      start: {Supervisor, :start_link, [children, opts]}
-    }
-    DynamicSupervisor.start_child(ZeroGame.Games, args)
   end
 
   def exists?(game) do
@@ -92,7 +75,6 @@ defmodule ZeroGame.Game do
   end
 
   def stop(name) do
-    EventManager.stop(name)
     GenStateMachine.stop(via(name))
   end
 

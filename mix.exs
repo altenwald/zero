@@ -15,7 +15,8 @@ defmodule Zero.MixProject do
   # Run "mix help deps" to learn about dependencies.
   defp deps do
     [
-      {:distillery, "~> 2.0"}
+      {:distillery, "~> 2.0"},
+      {:ex_doc, "~> 0.22", only: :dev, runtime: false}
     ]
   end
 end
