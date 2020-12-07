@@ -4,7 +4,7 @@ defmodule ZeroGame.MixProject do
   def project do
     [
       app: :zero_game,
-      version: "0.7.0",
+      version: "0.7.6",
       build_path: "../../_build",
       config_path: "../../config/config.exs",
       deps_path: "../../deps",
@@ -18,7 +18,7 @@ defmodule ZeroGame.MixProject do
   # Run "mix help compile.app" to learn about applications.
   def application do
     [
-      extra_applications: [:logger],
+      extra_applications: [:logger, :runtime_tools],
       mod: {ZeroGame.Application, []}
     ]
   end
