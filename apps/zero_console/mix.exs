@@ -1,10 +1,12 @@
 defmodule ZeroConsole.MixProject do
   use Mix.Project
 
+  @version "0.7.8"
+
   def project do
     [
       app: :zero_console,
-      version: "0.7.7",
+      version: @version,
       build_path: "../../_build",
       config_path: "../../config/config.exs",
       deps_path: "../../deps",

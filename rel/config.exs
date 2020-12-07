@@ -49,7 +49,7 @@ end
 release :zero do
   set version: Mix.Project.config[:version]
   set applications: [
-    :runtime_tools, :zero_web, :zero_console, :zero_game
+    :observer_cli, :runtime_tools, :zero_web, :zero_console, :zero_game
   ]
 end
 
