@@ -1,7 +1,7 @@
 defmodule Zero.MixProject do
   use Mix.Project
 
-  @version "0.7.6"
+  @version "0.7.7"
 
   def project do
     [
@@ -15,6 +15,7 @@ defmodule Zero.MixProject do
   # Run "mix help deps" to learn about dependencies.
   defp deps do
     [
+      {:observer_cli, "~> 1.6"},
       {:distillery, "~> 2.0"},
       {:ex_doc, "~> 0.22", only: :dev, runtime: false}
     ]

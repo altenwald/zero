@@ -6,6 +6,10 @@ defmodule ZeroConsole do
 
   alias IO.ANSI
 
+  def observer do
+    :observer_cli.start()
+  end
+
   defp ask(prompt) do
     "#{prompt}> "
     |> IO.gets()
