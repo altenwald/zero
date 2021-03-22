@@ -8,7 +8,8 @@ defmodule Zero.MixProject do
       apps_path: "apps",
       version: @version,
       start_permanent: Mix.env() == :prod,
-      deps: deps()
+      deps: deps(),
+      aliases: aliases()
     ]
   end
 
@@ -18,6 +19,19 @@ defmodule Zero.MixProject do
       {:observer_cli, "~> 1.6"},
       {:distillery, "~> 2.0"},
       {:ex_doc, "~> 0.22", only: :dev, runtime: false}
+    ]
+  end
+
+  defp aliases do
+    [
+      release: [
+        "local.hex --force",
+        "local.rebar --force",
+        "clean",
+        "deps.get",
+        "compile",
+        "distillery.release --upgrade --env=prod"
+      ]
     ]
   end
 end

@@ -39,6 +39,9 @@ environment :prod do
   set include_src: false
   set cookie: :"<(hl7?)zZo}3=4nayNI`AO/.*G0]Q!s3>BcaUoR;%<)K&ANxv@;%xIlgPT<_E)2u"
   set vm_args: "rel/vm.args"
+  set commands: [
+    observer: "rel/commands/observer.sh"
+  ]
 end
 
 # You may define one or more releases in this file.
