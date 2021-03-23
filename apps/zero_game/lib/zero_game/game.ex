@@ -644,6 +644,12 @@ defmodule ZeroGame.Game do
     %Game{game | shown: [card | game.shown], deck: deck}
   end
 
+  if Mix.env() == :test do
+    defp shuffle(cards), do: cards
+  else
+    defdelegate shuffle(cards), to: Enum
+  end
+
   defp shuffle_cards do
     deck =
       for c <- @card_colors do
@@ -655,6 +661,6 @@ defmodule ZeroGame.Game do
     # we use 2 decks to play more time :-)
     (deck ++ deck)
     |> List.flatten()
-    |> Enum.shuffle()
+    |> shuffle()
   end
 end
