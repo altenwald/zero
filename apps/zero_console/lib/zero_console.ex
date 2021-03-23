@@ -6,10 +6,6 @@ defmodule ZeroConsole do
 
   alias IO.ANSI
 
-  def observer do
-    :observer_cli.start()
-  end
-
   defp ask(prompt) do
     "#{prompt}> "
     |> IO.gets()
@@ -26,7 +22,13 @@ defmodule ZeroConsole do
     end
   end
 
-  def start(name \\ __MODULE__) do
+  def start() do
+    __MODULE__
+    |> to_string()
+    |> start()
+  end
+
+  def start(name) do
     ZeroGame.start(name)
     pid = ZeroGame.get_event_manager_pid(name)
     GenStage.start_link(__MODULE__, [pid, self()])
@@ -60,45 +62,53 @@ defmodule ZeroConsole do
     ZeroGame.join(name, user)
     IO.puts("Note that 'deal' should be made when everyone is onboarding.")
 
-    case ask("deal? [Y/n]") do
+    case ask("ready? [Y/n]") do
       "n" ->
         waiting(name, user)
 
       _ ->
         ZeroGame.deal(name)
-        playing(name, user)
+        waiting_until_ready(name, user)
     end
   end
 
-  def playing(name \\ __MODULE__, user) do
-    case ZeroGame.get_shown(name) do
-      :game_over ->
-        IO.puts("GAME OVER!")
+  def waiting_until_ready(name, user) do
+    IO.puts("waiting until all of the players are online...")
+    receive do
+      :dealt -> playing(name, user)
+    end
+  end
 
-      card ->
-        IO.puts([ANSI.reset(), ANSI.clear()])
-        IO.puts("Zero Game - #{vsn()}")
-        IO.puts("--------------------")
-        draw_players(ZeroGame.players(name))
+  def playing(user) do
+    __MODULE__
+    |> to_string()
+    |> playing(user)
+  end
 
-        IO.puts([
-          "\nShown --> (color: ",
-          print_color(ZeroGame.color?(name)),
-          ")",
-          "\nIn deck: #{ZeroGame.deck_cards_num(name)}\n"
-        ])
+  def playing(name, user) do
+    card = ZeroGame.get_shown(name)
+    IO.puts([ANSI.reset(), ANSI.clear()])
+    IO.puts("Zero Game - #{vsn()}")
+    IO.puts("--------------------")
+    draw_players(ZeroGame.players(name))
 
-        draw_card(card)
-        IO.puts("Your hand -->")
-        cards = ZeroGame.get_hand(name)
-        draw_cards(cards)
+    IO.puts([
+      "\nShown --> (color: ",
+      print_color(ZeroGame.color?(name)),
+      ")",
+      "\nIn deck: #{ZeroGame.deck_cards_num(name)}\n"
+    ])
 
-        if ZeroGame.is_my_turn?(name) do
-          choose_option(name, user, cards)
-        else
-          IO.puts("waiting for your turn...")
-          wait_for_turn(name, user)
-        end
+    draw_card(card)
+    IO.puts("Your hand -->")
+    cards = ZeroGame.get_hand(name)
+    draw_cards(cards)
+
+    if ZeroGame.is_my_turn?(name) do
+      choose_option(name, user, cards)
+    else
+      IO.puts("waiting for your turn...")
+      wait_for_turn(name, user)
     end
   end
 
@@ -177,8 +187,8 @@ defmodule ZeroConsole do
 
   defp draw_players(players) do
     [
-      "+----------------------+-----+\n",
-      for {name, cards_num} <- players do
+      "+----------------------+-----+---------+\n",
+      for {name, cards_num, status} <- players do
         [
           "| ",
           name
@@ -188,10 +198,14 @@ defmodule ZeroConsole do
           cards_num
           |> to_string()
           |> String.pad_leading(3),
+          " | ",
+          status
+          |> to_string()
+          |> String.pad_trailing(7),
           " |\n"
         ]
       end,
-      "+----------------------+-----+"
+      "+----------------------+-----+---------+"
     ]
     |> IO.puts()
   end

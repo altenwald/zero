@@ -78,16 +78,19 @@
                 <tr>
                   <th>Player</th>
                   <th>Cards</th>
+                  <th>Status</th>
                 </tr>
               </thead>
               <tbody id="list-players">
                 <tr class="table-success" id="player-1">
                   <td>manuel</td>
                   <td>10</td>
+                  <td>ready</td>
                 </tr>
                 <tr>
                   <td>mike</td>
                   <td>10</td>
+                  <td>out</td>
                 </tr>
               </tbody>
             </table>
@@ -174,7 +177,7 @@
             <h5 class="modal-title" id="onBoardingLabel">Play</h5>
           </div>
           <div class="modal-body">
-            <p>Press deal button when all of the players are on board! Players:</p>
+            <p>Players:</p>
             <ul id="modal-players">
             </ul>
             <p>Share: <a id="modal-players-url" href=""></a></p>
@@ -185,7 +188,7 @@
               </div>
             </div>
           <div class="modal-footer">
-            <button id="deal" type="button" class="btn btn-primary">Deal</button>
+            <button id="deal" type="button" class="btn btn-primary">Ready</button>
           </div>
         </div>
       </div>
@@ -197,13 +200,14 @@
             <h5 class="modal-title" id="howToPlayLabel">How to Play</h5>
           </div>
           <div class="modal-body">
-            <p>If you want to make suggestions or obtain the source code you can go to <a href="https://github.com/altenwald/zero">Github site</a> and create a issue, fork the code to send us modifications or fixes or whatever.</p>
+            <p>If you want to make suggestions or obtain the source code you can go to <a href="https://github.com/altenwald/zero">Github site</a> and create an issue, fork the code to send us modifications, suggestions or fixes. All of them are welcomed!</p>
             <p>Don't forget to give as an start!</p>
+
             <iframe src="https://ghbtns.com/github-btn.html?user=altenwald&repo=zero&type=star&count=true&size=large" frameborder="0" scrolling="0" width="170" height="30" title="GitHub"></iframe>
             <h2>Starting with a Match</h2>
-            <p>You have to provide a screen name for you and then you are going to be redirected to the waiting screen. This screen will show you the players incoming to play with you, the URL and QR code to join to the match and the possibility to add bots to your match.</p>
-            <p><strong>CAUTION:</strong> do NOT press the Deal button until everyone is inside of the game. Deal means you are going to start the game and it's not possible to go back:</p>
-            <p><button type="button" class="btn btn-primary">Deal</button></p>
+            <p>You have to provide a player name for you and then you are going to be redirected to the waiting screen. This screen will show you the players incoming to play with you, the URL and QR code to join to the match and the possibility to add bots to your match.</p>
+            <p>Then you can press the ready button:</p>
+            <p><button type="button" class="btn btn-primary">Ready</button></p>
             <p>Once the game is over, you will get two options:</p>
             <p>
               <button type="button" class="btn btn-success">New One</button>

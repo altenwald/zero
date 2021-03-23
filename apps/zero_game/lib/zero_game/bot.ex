@@ -22,6 +22,7 @@ defmodule ZeroGame.Bot do
   def init([producer, game, username]) do
     state = %State{game: game, username: username}
     Game.join(game, username)
+    Game.deal(game)
     Process.monitor(Game.get_pid(game))
     {:consumer, state, subscribe_to: [producer]}
   end

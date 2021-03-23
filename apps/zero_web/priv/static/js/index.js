@@ -86,10 +86,18 @@ function connect() {
         process_event_msg(data);
         switch(data.type) {
             case "join":
-                update_player(data.username);
+                if (!dealt) {
+                    update_player(data.username);
+                } else {
+                    update_player_table(data.username, "online");
+                }
                 break;
             case "leave":
-                clear_player(data.username);
+                if (!dealt) {
+                    clear_player(data.username);
+                } else {
+                    update_player_table(data.username, "offline");
+                }
                 break;
             case "id":
                 set_game_id(data.id);
@@ -213,6 +221,10 @@ function start_game(data) {
     update_game(data);
 }
 
+function update_player_table(player_name, status) {
+    $("#player-status-" + player_name).html(status);
+}
+
 function update_players_table(players, turn) {
     var html = players.reduce(function(html, player) {
         var player_name = player.username;
@@ -224,6 +236,11 @@ function update_players_table(players, turn) {
         } else {
             html += "<tr><td>" + player_name + "</td>";
         }
+        var status = "online";
+        if (player.status == "out") {
+            status = "offline";
+        }
+        html += "<td id='player-status-" + player_name + "'>" + status + "</td>";
         html += "<td>" + player.num_cards + "</td></tr>";
         return html;
     }, "");

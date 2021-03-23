@@ -175,8 +175,8 @@ defmodule ZeroWeb.Kiosk.Websocket do
   end
 
   defp get_players(players) do
-    for {name, num_cards} <- players do
-      %{"username" => name, "num_cards" => num_cards}
+    for {name, num_cards, status} <- players do
+      %{"username" => name, "num_cards" => num_cards, "status" => status}
     end
   end
 
@@ -207,7 +207,7 @@ defmodule ZeroWeb.Kiosk.Websocket do
 
     players = ZeroGame.players(name)
 
-    update = fn {player, _num_cards} ->
+    update = fn {player, _num_cards, _status} ->
       Agent.update(
         state.hiscore,
         fn value ->

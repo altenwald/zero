@@ -1,7 +1,7 @@
 defmodule ZeroConsole.MixProject do
   use Mix.Project
 
-  @version "0.7.8"
+  @version "0.8.0"
 
   def project do
     [

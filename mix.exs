@@ -17,8 +17,9 @@ defmodule Zero.MixProject do
   defp deps do
     [
       {:observer_cli, "~> 1.6"},
-      {:distillery, "~> 2.0"},
-      {:ex_doc, "~> 0.22", only: :dev, runtime: false}
+      {:distillery, "~> 2.1"},
+      {:dialyxir, "~> 1.1", only: :dev},
+      {:ex_doc, "~> 0.24", only: :dev, runtime: false}
     ]
   end
 

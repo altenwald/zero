@@ -163,8 +163,8 @@ defmodule ZeroWeb.Websocket do
   end
 
   defp get_players(players) do
-    for {name, num_cards} <- players do
-      %{"username" => name, "num_cards" => num_cards}
+    for {name, num_cards, status} <- players do
+      %{"username" => name, "num_cards" => num_cards, "status" => status}
     end
   end
 
@@ -190,8 +190,8 @@ defmodule ZeroWeb.Websocket do
 
       if not ZeroGame.is_game_over?(name) do
         replies =
-          for {player, _} <- ZeroGame.players(name), player != username do
-            {:text, Jason.encode!(%{"type" => "join", "username" => player})}
+          for {player, _, status} <- ZeroGame.players(name), player != username do
+            {:text, Jason.encode!(%{"type" => "join", "username" => player, "status" => status})}
           end
 
         ZeroGame.join(name, username)

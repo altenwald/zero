@@ -51,7 +51,7 @@ function start_game(data) {
   update_game(data);
 }
 
-function update_players_table(players, turn) {
+function update_players_table(players) {
   var html = players.reduce(function(html, player) {
       var player_name = player.username;
       html += "<tr><td>" + player_name + "</td>";
@@ -81,7 +81,7 @@ function update_deck(deck) {
 }
 
 function update_game(data) {
-  update_players_table(data.players, data.turn);
+  update_players_table(data.players);
   update_shown_card(data);
   update_deck(data.deck);
   $("#game-msg").html("");
@@ -178,7 +178,7 @@ function connect() {
       case "game_over":
         update_hiscore(data.hiscore);
         update_shown_card(data);
-        update_players_table(data.players, data.turn);
+        update_players_table(data.players);
         $("#game-over-msg").html(data.winner + " won!");
         $("#gameOverModal").modal('show');
         break;
