@@ -22,12 +22,18 @@ defmodule ZeroConsole do
     end
   end
 
-  def start() do
+  @doc """
+  Performs the start of the game using the current module as key.
+  """
+  def start do
     __MODULE__
     |> to_string()
     |> start()
   end
 
+  @doc """
+  Starts a game given the game ID as the only one paramter.
+  """
   def start(name) do
     ZeroGame.start(name)
     pid = ZeroGame.get_event_manager_pid(name)
@@ -36,10 +42,14 @@ defmodule ZeroConsole do
     waiting(name, user)
   end
 
+  @impl GenStage
+  @doc false
   def init([producer, game]) do
     {:consumer, game, subscribe_to: [producer]}
   end
 
+  @impl GenStage
+  @doc false
   def handle_events(events, _from, game) do
     for event <- events do
       case event do
@@ -58,12 +68,17 @@ defmodule ZeroConsole do
     {:noreply, [], game}
   end
 
-  def waiting(name, user) do
+  defp waiting(name, user) do
     ZeroGame.join(name, user)
     IO.puts("Note that 'deal' should be made when everyone is onboarding.")
 
-    case ask("ready? [Y/n]") do
-      "n" ->
+    case ask("ready, join again or add boot? [R/j/b]") do
+      "j" ->
+        waiting(name, user)
+
+      "b" ->
+        botname = ask("bot name")
+        ZeroGame.start_bot(name, botname)
         waiting(name, user)
 
       _ ->
@@ -72,19 +87,27 @@ defmodule ZeroConsole do
     end
   end
 
-  def waiting_until_ready(name, user) do
+  defp waiting_until_ready(name, user) do
     IO.puts("waiting until all of the players are online...")
     receive do
       :dealt -> playing(name, user)
     end
   end
 
+  @doc """
+  Plays as the player given by the first parameter, for the game based
+  on the current module name.
+  """
   def playing(user) do
     __MODULE__
     |> to_string()
     |> playing(user)
   end
 
+  @doc """
+  Plays as the player given by the second parameter, for the game based
+  on the name provided as the first parameter.
+  """
   def playing(name, user) do
     card = ZeroGame.get_shown(name)
     IO.puts([ANSI.reset(), ANSI.clear()])
@@ -158,6 +181,9 @@ defmodule ZeroConsole do
     end
   end
 
+  @doc """
+  Get the version for the console application.
+  """
   def vsn do
     to_string(Application.spec(:zero_console)[:vsn])
   end

@@ -1,7 +1,16 @@
 defmodule ZeroWeb.Kiosk.Websocket do
+  @moduledoc """
+  The Kiosk is a web interface letting to the users to see the
+  information about the game. This is only showing general information
+  therefore it's ideal for putting a big TV screen with this information
+  and players playing in front of this screen with their devices.
+
+  This module is getting all of the information from the game and sending
+  that back to the screen. It's only showing general information and the
+  cards aren't unveil between users.
+  """
   require Logger
 
-  alias ZeroGame.Bot
   alias ZeroWeb.Request
 
   @default_deck "timmy"
@@ -244,7 +253,7 @@ defmodule ZeroWeb.Kiosk.Websocket do
     botname = String.trim(botname)
 
     if ZeroGame.valid_name?(state.name, botname) do
-      Bot.start_link(state.name, botname)
+      ZeroGame.start_bot(state.name, botname)
     end
 
     {:ok, state}

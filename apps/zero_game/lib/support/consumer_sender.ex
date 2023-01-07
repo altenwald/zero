@@ -1,4 +1,5 @@
 defmodule ZeroGame.ConsumerSender do
+  @moduledoc false
   use GenStage
 
   def start(name) do
@@ -10,10 +11,12 @@ defmodule ZeroGame.ConsumerSender do
     GenStage.stop(pid)
   end
 
+  @impl GenStage
   def init([producer, pid]) do
     {:consumer, pid, subscribe_to: [producer]}
   end
 
+  @impl GenStage
   def handle_events(events, _from, pid) do
     for event <- events do
       send(pid, event)

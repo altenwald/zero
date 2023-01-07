@@ -1,12 +1,10 @@
 defmodule ZeroGame.MixProject do
   use Mix.Project
 
-  @version "0.8.0"
-
   def project do
     [
       app: :zero_game,
-      version: @version,
+      version: "0.9.0",
       build_path: "../../_build",
       config_path: "../../config/config.exs",
       deps_path: "../../deps",
@@ -28,8 +26,9 @@ defmodule ZeroGame.MixProject do
   # Run "mix help deps" to learn about dependencies.
   defp deps do
     [
-      {:gen_state_machine, "~> 2.1"},
-      {:gen_stage, "~> 1.0"}
+      {:gen_state_machine, "~> 3.0"},
+      {:gen_stage, "~> 1.0"},
+      {:doctor, ">= 0.0.0", only: [:dev, :test], runtime: false}
     ]
   end
 end

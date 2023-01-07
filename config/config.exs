@@ -1,4 +1,4 @@
-use Mix.Config
+import Config
 
 config :etag_plug,
   generator: ETag.Generator.SHA1,

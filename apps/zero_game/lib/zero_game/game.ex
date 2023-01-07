@@ -1,4 +1,20 @@
 defmodule ZeroGame.Game do
+  @moduledoc """
+  The state machine handling the game. This module has all of the
+  functionality related to the game. It's the controller. The responsibilities
+  of this module are:
+
+  - Handling the information of the users who are going to play the game.
+  - Handling the information of the remaining cards in the deck.
+  - Knowing who's the next player to perform the move (based on PID).
+  - Performing the game logic. The action of each card.
+
+  The user could play a card, pass, pick a card from the deck or request
+  information from the game to know how many cards remains in the deck,
+  what's the score for the users, what are the cards in the user's hand,
+  and other actions. Check the functions in this module for further
+  information.
+  """
   use GenStateMachine, callback_mode: :state_functions, restart: :transient
 
   @card_colors [:blue, :red, :yellow, :green]
@@ -15,6 +31,9 @@ defmodule ZeroGame.Game do
 
   alias ZeroGame.{EventManager, Game}
 
+  @typedoc """
+  The name of the game (or ID) is going to be defined as a string (or binary).
+  """
   @type name :: String.t()
 
   @type card :: {card_color, card_type}
@@ -27,6 +46,12 @@ defmodule ZeroGame.Game do
   @type player :: {pid, name, cards, player_status}
   @type players :: [player]
 
+  @typedoc """
+  The internal state for the game. It stores the players playing the game,
+  the cards remaining in the deck, the shown card, the color for the shown
+  card, if the user can pass, the amount of cards that could be picked from
+  deck, and the name of the game.
+  """
   @type t :: %__MODULE__{
     players: players,
     deck: cards,
@@ -49,94 +74,175 @@ defmodule ZeroGame.Game do
     {:via, Registry, {ZeroGame.Game.Registry, game}}
   end
 
+  @doc """
+  Starts a new game given the name ID for the game.
+  """
   def start_link(name) do
     GenStateMachine.start_link(__MODULE__, [name], name: via(name))
   end
 
+  @doc """
+  Check if the game exists or not.
+  """
   @spec exists?(name) :: boolean
-  def exists?(game) do
-    case Registry.lookup(ZeroGame.Game.Registry, game) do
-      [{_pid, nil}] -> true
-      [] -> false
-    end
-  end
+  def exists?(game), do: get_pid(game) != nil
 
   defp cast(name, args), do: GenStateMachine.cast(via(name), args)
   defp call(name, args), do: GenStateMachine.call(via(name), args)
 
+  @doc """
+  Request join to the game. You need to provide the name of the game and
+  the name for the player.
+  """
   @spec join(game_name :: name, player_name :: name) :: :ok
   def join(name, player_name), do: cast(name, {:join, self(), player_name})
 
+  @doc """
+  Request the deal for the game. It's similar to init or start the game.
+  """
   @spec deal(game_name :: name) :: :ok
   def deal(name), do: cast(name, {:deal, self()})
 
-  @spec get_hand(game_name :: name) :: nil | %{ integer => card }
+  @doc """
+  Get the hand of cards that we are playing with. It is giving a numbering
+  to the cards which will be useful for `play/2` and `play/3`.
+  """
+  @spec get_hand(game_name :: name) :: nil | %{integer => card}
   def get_hand(name), do: call(name, :get_hand)
 
+  @doc """
+  Get the number of players for the given game.
+  """
   @spec get_players_number(game_name :: name) :: integer
   def get_players_number(name), do: call(name, :players_num)
 
+  @doc """
+  Get the shown card in the middle of the table.
+  """
   @spec get_shown(game_name :: name) :: nil | card
   def get_shown(name), do: call(name, :get_shown)
 
+  @doc """
+  Play a specific card. The number passed as second parameter is related to
+  the numbers given to each card in the hand request (see `get_hand/1`).
+  """
   @spec play(game_name :: name, integer, nil | card_color) ::
     nil | :ok | {:error, :invalid_card | :invalid_choosen_color | :invalid_number | :not_your_turn}
   def play(name, num, color \\ nil), do: call(name, {:play, num, color})
 
+  @doc """
+  Pick a card from the deck. It could give a positive result (`:ok`) or
+  negative ones like `{:error, :max_pick_from_deck}`.
+  """
   @spec pick_from_deck(game_name :: name) ::
     nil | :ok | :gameover | {:error, :max_pick_from_deck | :not_your_turn}
   def pick_from_deck(name), do: call(name, :pick_from_deck)
 
+  @doc """
+  Pass. Consider the turn over, but only if we picked up a card from
+  the deck first.
+  """
   @spec pass(game_name :: name) ::
     nil | :ok | {:error, :cannot_pass | :not_your_turn}
   def pass(name), do: call(name, :pass)
 
+  @doc """
+  Returns true if it's the turn for the process that's requesting that
+  information otherwise false.
+  """
   @spec is_my_turn?(game_name :: name) :: nil | boolean
   def is_my_turn?(name), do: call(name, :is_my_turn?)
 
+  @doc """
+  Returns the current color for the card shown on the table (`shown_color`).
+  """
   @spec color?(game_name :: name) :: nil | card_color
   def color?(name), do: call(name, :color?)
 
+  @doc """
+  Return the list of the players as a list of tuples where the first element
+  is the name of the player, the second is the number of cards and the last one
+  is the status of the player.
+  """
   @spec players(game_name :: name) :: {player_name :: name, cards :: integer, player_status}
   def players(name), do: call(name, :players)
 
+  @doc """
+  Whose turn is it? Returns that information (the name of the player)
+  otherwise `nil`.
+  """
   @spec whose_turn_is_it?(game_name :: name) :: nil | name
   def whose_turn_is_it?(name), do: call(name, :whose_turn_is_it?)
 
+  @doc """
+  Returns the number of cards in the deck at the moment.
+  """
   @spec deck_cards_num(game_name :: name) :: nil | integer
   def deck_cards_num(name), do: call(name, :deck_cards_num)
 
+  @doc """
+  Request the restart of the game.
+  """
   @spec restart(game_name :: name) :: :ok
   def restart(name), do: cast(name, :restart)
 
+  @doc """
+  Check if the name we want to provide is valid or not.
+  """
   @spec valid_name?(game_name :: name, username :: name) :: boolean
   def valid_name?(name, username), do: call(name, {:valid_name?, username})
 
+  @doc """
+  Returns true if the game is over otherwise false.
+  """
   @spec is_game_over?(game_name :: name) :: boolean
   def is_game_over?(name), do: call(name, :is_game_over?)
 
+  @doc """
+  Returns true if the game started otherwise false.
+  """
   @spec is_started?(game_name :: name) :: boolean
   def is_started?(name), do: call(name, :is_started?)
 
+  @doc """
+  Returns the process ID for the given name if the name has a
+  corresponding PID registered.
+  """
   @spec get_pid(game_name :: name) :: pid
   def get_pid(game) do
-    [{pid, _}] = Registry.lookup(ZeroGame.Game.Registry, game)
-    pid
+    case Registry.lookup(ZeroGame.Game.Registry, game) do
+      [{pid, _}] -> pid
+      _ -> nil
+    end
   end
 
+  @doc """
+  Stops the game.
+  """
   @spec stop(game_name :: name) :: :ok
   def stop(name) do
     GenStateMachine.stop(via(name))
   end
 
-  @impl true
+  @impl GenStateMachine
   @doc false
   def init([name]) do
     game = %Game{deck: shuffle_cards(), name: name}
     {:ok, :waiting_players, game, [{:state_timeout, @max_menu_time, :game_over}]}
   end
 
-  @impl true
+  @impl GenStateMachine
+  @doc false
+  def terminate(:shutdown, _state, _data), do: :ok
+
+  def terminate(:normal, _state, data) do
+    spawn(fn ->
+      ZeroGame.stop(data.name)
+    end)
+    :ok
+  end
+
+  @impl GenStateMachine
   @doc false
   def code_change(_old_vsn, state_name, state_data, _extra) do
     {:ok, state_name, state_data}
@@ -229,6 +335,7 @@ defmodule ZeroGame.Game do
 
   ## State: playing
 
+  @doc false
   def playing(:state_timeout, :game_over, _state), do: :stop
 
   def playing({:call, from}, :is_game_over?, _state) do
@@ -418,6 +525,7 @@ defmodule ZeroGame.Game do
 
   ## State: ended
 
+  @doc false
   def ended({:call, from}, :is_game_over?, _state) do
     {:keep_state_and_data, [{:reply, from, true}]}
   end

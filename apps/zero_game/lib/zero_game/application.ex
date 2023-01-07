@@ -1,11 +1,11 @@
 defmodule ZeroGame.Application do
-  # See https://hexdocs.pm/elixir/Application.html
-  # for more information on OTP Applications
   @moduledoc false
 
   use Application
   require Logger
 
+  @impl Application
+  @doc false
   def start(_type, _args) do
     children = [
       {Registry, keys: :unique, name: ZeroGame.Game.Registry},

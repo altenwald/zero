@@ -8,7 +8,7 @@ defmodule ZeroGame do
 
   @sup_reg ZeroGame.Supervisor.Registry
 
-  alias ZeroGame.{EventManager, Game}
+  alias ZeroGame.{Bot, EventManager, Game}
 
   @doc """
   Starts the game. It is starting a new supervisor with two
@@ -17,7 +17,8 @@ defmodule ZeroGame do
   def start(game) do
     children = [
       {Game, game},
-      {EventManager, game}
+      {EventManager, game},
+      {DynamicSupervisor, strategy: :one_for_one}
     ]
     sup_via = {:via, Registry, {@sup_reg, game}}
     opts = [strategy: :one_for_one, name: sup_via]
@@ -28,13 +29,20 @@ defmodule ZeroGame do
     DynamicSupervisor.start_child(ZeroGame.Games, args)
   end
 
+  def start_bot(name, username) do
+    [{pid, nil}] = Registry.lookup(@sup_reg, name)
+    children = DynamicSupervisor.which_children(pid)
+    [dynsup] = for {_, pid, :supervisor, _} <- children, do: pid
+    DynamicSupervisor.start_child(dynsup, {Bot, [name, username]})
+  end
+
   @doc """
   Retrieves the PID for the EventManager.
   """
   defdelegate get_event_manager_pid(name), to: EventManager, as: :get_pid
 
   @doc """
-  Stops the consumer and the game state machine independiently.
+  Stops the consumer and the game state machine independently.
   """
   def stop(name) do
     [{pid, nil}] = Registry.lookup(@sup_reg, name)

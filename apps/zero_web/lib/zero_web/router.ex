@@ -1,4 +1,8 @@
 defmodule ZeroWeb.Router do
+  @moduledoc """
+  The router is responsible for the routes implementation. It's defining
+  the possible URIs available for the HTTP server.
+  """
   use Plug.Router
 
   plug(Plug.Logger, log: :debug)

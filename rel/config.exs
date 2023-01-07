@@ -55,4 +55,3 @@ release :zero do
     :observer_cli, :runtime_tools, :zero_web, :zero_console, :zero_game
   ]
 end
-

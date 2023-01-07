@@ -1,8 +1,5 @@
 defmodule ZeroWeb.Application do
-  # See https://hexdocs.pm/elixir/Application.html
-  # for more information on OTP Applications
   @moduledoc false
-
   use Application
 
   require Logger
@@ -13,6 +10,8 @@ defmodule ZeroWeb.Application do
 
   @consumer_sup ZeroWeb.Consumers
 
+  @impl Application
+  @doc false
   def start(_type, _args) do
     # List all child processes to be supervised
     port_number = Application.get_env(:zero_web, :port, @port)
@@ -32,6 +31,10 @@ defmodule ZeroWeb.Application do
     Supervisor.start_link(children, opts)
   end
 
+  @doc """
+  Start a consumer given the name for the event manager (producer) and the
+  websocket process id that will be subscribed.
+  """
   def start_consumer(name, websocket) do
     producer = EventManager.get_pid(name)
     args = [producer, websocket]

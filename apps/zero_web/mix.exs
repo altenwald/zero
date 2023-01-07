@@ -1,12 +1,10 @@
 defmodule ZeroWeb.MixProject do
   use Mix.Project
 
-  @version "0.8.0"
-
   def project do
     [
       app: :zero_web,
-      version: @version,
+      version: "0.9.0",
       build_path: "../../_build",
       config_path: "../../config/config.exs",
       deps_path: "../../deps",
@@ -30,11 +28,12 @@ defmodule ZeroWeb.MixProject do
     [
       {:zero_game, in_umbrella: true},
       {:gen_stage, "~> 1.0"},
-      {:uuid, "~> 1.1"},
+      {:elixir_uuid, "~> 1.1"},
       {:jason, "~> 1.2"},
       {:plug_cowboy, "~> 2.3"},
-      {:etag_plug, "~> 0.2"},
-      {:eqrcode, "~> 0.1"}
+      {:etag_plug, "~> 1.0"},
+      {:eqrcode, "~> 0.1"},
+      {:doctor, ">= 0.0.0", only: [:dev, :test], runtime: false}
     ]
   end
 end

@@ -1,7 +1,12 @@
 defmodule ZeroWeb.Websocket do
+  @moduledoc """
+  The user is connected via WebSocket when it's playing using the web
+  interface. This module is containing all of the functionality related
+  to the WebSocket connection and the interaction between the WebSocket
+  and the game.
+  """
   require Logger
 
-  alias ZeroGame.Bot
   alias ZeroWeb.Request
 
   @default_deck "timmy"
@@ -188,7 +193,10 @@ defmodule ZeroWeb.Websocket do
       ZeroWeb.Application.start_consumer(name, self())
       username = String.trim(username)
 
-      if not ZeroGame.is_game_over?(name) do
+      if ZeroGame.is_game_over?(name) do
+        ZeroGame.restart(name)
+        {:ok, state}
+      else
         replies =
           for {player, _, status} <- ZeroGame.players(name), player != username do
             {:text, Jason.encode!(%{"type" => "join", "username" => player, "status" => status})}
@@ -196,9 +204,6 @@ defmodule ZeroWeb.Websocket do
 
         ZeroGame.join(name, username)
         {:reply, replies, %{state | name: name}}
-      else
-        ZeroGame.restart(name)
-        {:ok, state}
       end
     else
       Logger.warn("doesn't exist #{inspect(name)}")
@@ -249,7 +254,7 @@ defmodule ZeroWeb.Websocket do
     botname = String.trim(botname)
 
     if ZeroGame.valid_name?(state.name, botname) do
-      Bot.start_link(state.name, botname)
+      ZeroGame.start_bot(state.name, botname)
     end
 
     {:ok, state}
