@@ -8,13 +8,17 @@ build:
     context: ci
   env:
     MIX_ENV: prod
+    # A container's open-files limit is about a billion and the Erlang VM sizes its port table from it: without
+    # this it takes 2 GiB just to start, and the build is killed at the memory limit.
+    ERL_FLAGS: "+Q 65536"
     # What can be reused between builds lives under /cache (kept per repository by dymploy).
     MIX_HOME: /cache/mix
     HEX_HOME: /cache/hex
   cache:
     - {name: mix, path: /cache/mix}
     - {name: hex, path: /cache/hex}
-  limits: {cpus: 2, memory: 2g, timeout: 10m}
+  # nofile: a container has about a billion open files by default and the Erlang VM sizes its tables from it.
+  limits: {cpus: 2, memory: 2g, timeout: 10m, nofile: 65536}
   steps:
     - name: dependencies
       run: |
