@@ -18,19 +18,24 @@ defmodule ZeroWeb.Router do
   plug(:dispatch)
   # plug ETag.Plug
 
+  get "/websession" do
+    upgrade(conn, ZeroWeb.Websocket)
+  end
+
+  get "/kiosksession" do
+    upgrade(conn, ZeroWeb.Kiosk.Websocket)
+  end
+
   get "/" do
-    priv_dir = :code.priv_dir(:zero_web)
-    send_file(conn, 200, "#{priv_dir}/static/index.html")
+    page(conn, "index.html")
   end
 
   get "/kiosk" do
-    priv_dir = :code.priv_dir(:zero_web)
-    send_file(conn, 200, "#{priv_dir}/static/kiosk.html")
+    page(conn, "kiosk.html")
   end
 
   get "/kiosk/:id" do
-    priv_dir = :code.priv_dir(:zero_web)
-    send_file(conn, 200, "#{priv_dir}/static/kiosk.html")
+    page(conn, "kiosk.html")
   end
 
   get "/qr/:id" do
@@ -53,11 +58,22 @@ defmodule ZeroWeb.Router do
   end
 
   get "/:id" do
-    priv_dir = :code.priv_dir(:zero_web)
-    send_file(conn, 200, "#{priv_dir}/static/index.html")
+    page(conn, "index.html")
   end
 
   match _ do
     send_resp(conn, 404, "oops")
+  end
+
+  defp page(conn, file) do
+    conn
+    |> put_resp_content_type("text/html")
+    |> send_file(200, Path.join([:code.priv_dir(:zero_web), "static", file]))
+  end
+
+  defp upgrade(conn, handler) do
+    conn
+    |> WebSockAdapter.upgrade(handler, [remote_ip: ZeroWeb.Request.remote_ip(conn)], timeout: 60_000)
+    |> halt()
   end
 end

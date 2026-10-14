@@ -75,7 +75,7 @@ defmodule ZeroGame.Bot do
   end
 
   defp process_event(:dealt, state) do
-    if Game.is_my_turn?(state.game) do
+    if Game.my_turn?(state.game) do
       Process.sleep(@time_to_think)
       play(state.username, state.game)
     end
@@ -101,7 +101,7 @@ defmodule ZeroGame.Bot do
   end
 
   defp process_event(event, state) do
-    Logger.warn("event not handled => #{inspect(event)}")
+    Logger.warning("event not handled => #{inspect(event)}")
     {:noreply, [], state}
   end
 

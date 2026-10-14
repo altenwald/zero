@@ -14,12 +14,11 @@ defmodule ZeroConsole do
   end
 
   defp ask_num(prompt) do
-    try do
-      ask(prompt)
-      |> String.to_integer()
-    rescue
-      _ in ArgumentError -> ask_num(prompt)
-    end
+    prompt
+    |> ask()
+    |> String.to_integer()
+  rescue
+    _ in ArgumentError -> ask_num(prompt)
   end
 
   @doc """
@@ -127,7 +126,7 @@ defmodule ZeroConsole do
     cards = ZeroGame.get_hand(name)
     draw_cards(cards)
 
-    if ZeroGame.is_my_turn?(name) do
+    if ZeroGame.my_turn?(name) do
       choose_option(name, user, cards)
     else
       IO.puts("waiting for your turn...")

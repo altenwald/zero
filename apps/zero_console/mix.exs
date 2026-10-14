@@ -4,12 +4,12 @@ defmodule ZeroConsole.MixProject do
   def project do
     [
       app: :zero_console,
-      version: "0.9.0",
+      version: "1.0.0",
       build_path: "../../_build",
       config_path: "../../config/config.exs",
       deps_path: "../../deps",
       lockfile: "../../mix.lock",
-      elixir: "~> 1.10",
+      elixir: "~> 1.20",
       start_permanent: Mix.env() == :prod,
       deps: deps()
     ]
@@ -26,7 +26,7 @@ defmodule ZeroConsole.MixProject do
   defp deps do
     [
       {:zero_game, in_umbrella: true},
-      {:doctor, ">= 0.0.0", only: [:dev, :test], runtime: false}
+      {:doctor, "~> 0.22", only: [:dev, :test], runtime: false}
     ]
   end
 end

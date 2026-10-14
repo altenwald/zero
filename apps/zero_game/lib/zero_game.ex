@@ -109,7 +109,7 @@ defmodule ZeroGame do
   Is my turn? The function returns if the process caller is which
   has the possibility to play or not.
   """
-  defdelegate is_my_turn?(name), to: ZeroGame.Game
+  defdelegate my_turn?(name), to: ZeroGame.Game
 
   @doc """
   Color? It's giving the current and active color based on the
@@ -146,10 +146,10 @@ defmodule ZeroGame do
   @doc """
   Is Game Over? Is telling us if the game is over or not.
   """
-  defdelegate is_game_over?(name), to: ZeroGame.Game
+  defdelegate game_over?(name), to: ZeroGame.Game
 
   @doc """
   Is started? Tell us if the game started or not.
   """
-  defdelegate is_started?(name), to: ZeroGame.Game
+  defdelegate started?(name), to: ZeroGame.Game
 end

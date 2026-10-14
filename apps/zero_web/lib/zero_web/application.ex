@@ -17,11 +17,7 @@ defmodule ZeroWeb.Application do
     port_number = Application.get_env(:zero_web, :port, @port)
 
     children = [
-      Plug.Cowboy.child_spec(
-        scheme: :http,
-        plug: ZeroWeb.Router,
-        options: [port: port_number, dispatch: dispatch()]
-      ),
+      {Bandit, plug: ZeroWeb.Router, scheme: :http, port: port_number},
       {DynamicSupervisor, strategy: :one_for_one, name: @consumer_sup}
     ]
 
@@ -43,16 +39,5 @@ defmodule ZeroWeb.Application do
 
   def vsn do
     to_string(Application.spec(:zero_web)[:vsn])
-  end
-
-  defp dispatch do
-    [
-      {:_,
-       [
-         {"/websession", ZeroWeb.Websocket, []},
-         {"/kiosksession", ZeroWeb.Kiosk.Websocket, []},
-         {:_, Plug.Cowboy.Handler, {ZeroWeb.Router, []}}
-       ]}
-    ]
   end
 end

@@ -26,7 +26,7 @@ defmodule ZeroGameTest do
     test "trying to play solo" do
       assert :ok = ZeroGame.join(@game_name, @player_one)
       assert :ok = ZeroGame.deal(@game_name)
-      refute ZeroGame.is_started?(@game_name)
+      refute ZeroGame.started?(@game_name)
       assert 1 = ZeroGame.get_players_number(@game_name)
       assert_receive {:join, "TheBest"}
       refute_receive _, 200
@@ -35,14 +35,14 @@ defmodule ZeroGameTest do
     test "playing duo" do
       assert :ok = ZeroGame.join(@game_name, @player_one)
       assert :ok = ZeroGame.deal(@game_name)
-      refute ZeroGame.is_started?(@game_name)
+      refute ZeroGame.started?(@game_name)
       assert 1 = ZeroGame.get_players_number(@game_name)
       assert_receive {:join, "TheBest"}
 
       second_player = spawn &playing_duo_second_player/0
       assert_receive {:join, "Anothe One Bite The Dust"}
 
-      assert ZeroGame.is_started?(@game_name)
+      assert ZeroGame.started?(@game_name)
       assert 2 = ZeroGame.get_players_number(@game_name)
 
       assert_receive :dealing
@@ -81,7 +81,7 @@ defmodule ZeroGameTest do
     end
   end
 
-  defp playing_duo_second_player() do
+  defp playing_duo_second_player do
     assert :ok = ZeroGame.join(@game_name, @player_two)
     assert :ok = ZeroGame.deal(@game_name)
     assert_receive :play, 2_000

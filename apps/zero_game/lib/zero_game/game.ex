@@ -150,8 +150,8 @@ defmodule ZeroGame.Game do
   Returns true if it's the turn for the process that's requesting that
   information otherwise false.
   """
-  @spec is_my_turn?(game_name :: name) :: nil | boolean
-  def is_my_turn?(name), do: call(name, :is_my_turn?)
+  @spec my_turn?(game_name :: name) :: nil | boolean
+  def my_turn?(name), do: call(name, :my_turn?)
 
   @doc """
   Returns the current color for the card shown on the table (`shown_color`).
@@ -195,20 +195,20 @@ defmodule ZeroGame.Game do
   @doc """
   Returns true if the game is over otherwise false.
   """
-  @spec is_game_over?(game_name :: name) :: boolean
-  def is_game_over?(name), do: call(name, :is_game_over?)
+  @spec game_over?(game_name :: name) :: boolean
+  def game_over?(name), do: call(name, :game_over?)
 
   @doc """
   Returns true if the game started otherwise false.
   """
-  @spec is_started?(game_name :: name) :: boolean
-  def is_started?(name), do: call(name, :is_started?)
+  @spec started?(game_name :: name) :: boolean
+  def started?(name), do: call(name, :started?)
 
   @doc """
   Returns the process ID for the given name if the name has a
   corresponding PID registered.
   """
-  @spec get_pid(game_name :: name) :: pid
+  @spec get_pid(game_name :: name) :: pid | nil
   def get_pid(game) do
     case Registry.lookup(ZeroGame.Game.Registry, game) do
       [{pid, _}] -> pid
@@ -253,11 +253,11 @@ defmodule ZeroGame.Game do
   @doc false
   def waiting_players(:state_timeout, :game_over, _state), do: :stop
 
-  def waiting_players({:call, from}, :is_started?, _state) do
+  def waiting_players({:call, from}, :started?, _state) do
     {:keep_state_and_data, [{:reply, from, false}]}
   end
 
-  def waiting_players({:call, from}, :is_game_over?, _state) do
+  def waiting_players({:call, from}, :game_over?, _state) do
     {:keep_state_and_data, [{:reply, from, false}]}
   end
 
@@ -271,7 +271,7 @@ defmodule ZeroGame.Game do
       {nil, nil} ->
         Process.monitor(player_pid)
         EventManager.notify(game.name, {:join, player_name})
-        {:keep_state, %Game{game | players: [{player_pid, player_name, [], :waiting} | game.players]}}
+        {:keep_state, %{game | players: [{player_pid, player_name, [], :waiting} | game.players]}}
 
       _ ->
         :keep_state_and_data
@@ -322,7 +322,7 @@ defmodule ZeroGame.Game do
       ) do
     {_, player_name, _, _} = player = find_by_pid(game, player_pid)
     EventManager.notify(game.name, {:disconnected, player_name})
-    {:keep_state, %Game{game | players: players -- [player]}}
+    {:keep_state, %{game | players: players -- [player]}}
   end
 
   def waiting_players({:call, from}, _event, _state) do
@@ -338,11 +338,11 @@ defmodule ZeroGame.Game do
   @doc false
   def playing(:state_timeout, :game_over, _state), do: :stop
 
-  def playing({:call, from}, :is_game_over?, _state) do
+  def playing({:call, from}, :game_over?, _state) do
     {:keep_state_and_data, [{:reply, from, false}]}
   end
 
-  def playing({:call, from}, :is_started?, _state) do
+  def playing({:call, from}, :started?, _state) do
     {:keep_state_and_data, [{:reply, from, true}]}
   end
 
@@ -367,7 +367,7 @@ defmodule ZeroGame.Game do
           List.keyreplace(players, name, 1, {player_pid, name, cards, :waiting})
       end
 
-    {:keep_state, %Game{game | players: players}}
+    {:keep_state, %{game | players: players}}
   end
 
   def playing(:cast, {:deal, pid}, game) do
@@ -403,7 +403,7 @@ defmodule ZeroGame.Game do
     {:keep_state_and_data, [{:reply, from, card_shown}]}
   end
 
-  def playing({:call, from}, :is_my_turn?, %Game{players: [{pid, _, _, _} | _]}) do
+  def playing({:call, from}, :my_turn?, %Game{players: [{pid, _, _, _} | _]}) do
     reply =
       case from do
         {^pid, _} -> true
@@ -516,7 +516,7 @@ defmodule ZeroGame.Game do
           List.keyreplace(players, player_pid, 0, {nil, player_name, cards, :out})
       end
 
-    {:keep_state, %Game{game | players: players}}
+    {:keep_state, %{game | players: players}}
   end
 
   def playing(:cast, :restart, _game) do
@@ -526,11 +526,11 @@ defmodule ZeroGame.Game do
   ## State: ended
 
   @doc false
-  def ended({:call, from}, :is_game_over?, _state) do
+  def ended({:call, from}, :game_over?, _state) do
     {:keep_state_and_data, [{:reply, from, true}]}
   end
 
-  def ended({:call, from}, :is_started?, _state) do
+  def ended({:call, from}, :started?, _state) do
     {:keep_state_and_data, [{:reply, from, false}]}
   end
 
@@ -572,7 +572,7 @@ defmodule ZeroGame.Game do
     {:keep_state_and_data, [{:reply, from, card_shown}]}
   end
 
-  def ended({:call, from}, :is_my_turn?, _game) do
+  def ended({:call, from}, :my_turn?, _game) do
     {:keep_state_and_data, [{:reply, from, false}]}
   end
 
@@ -606,7 +606,7 @@ defmodule ZeroGame.Game do
   defp ready_player(game, pid) do
     if  player = find_by_pid(game, pid) do
       {^pid, name, cards, _status} = player
-      %Game{game | players: [{pid, name, cards, :ready}|game.players -- [player]]}
+      %{game | players: [{pid, name, cards, :ready}|game.players -- [player]]}
     end
   end
 
@@ -628,7 +628,7 @@ defmodule ZeroGame.Game do
         fn {pid, name, _, status} -> {pid, name, [], status} end
       )
 
-    game = %Game{game | players: players}
+    game = %{game | players: players}
 
     give_card = fn _, game ->
       EventManager.notify(game.name, {:deal, player_name(game)})
@@ -670,7 +670,7 @@ defmodule ZeroGame.Game do
   defp effects(game, {_color, :plus_2}, _choosen_color, previous) do
     EventManager.notify(game.name, {:plus_2, player_name(game), previous})
 
-    %Game{game | pick_from_deck: @max_pick_from_deck + 2}
+    %{game | pick_from_deck: @max_pick_from_deck + 2}
     |> pick_card(2)
   end
 
@@ -678,19 +678,19 @@ defmodule ZeroGame.Game do
     EventManager.notify(game.name, {:plus_4, player_name(game), previous})
     EventManager.notify(game.name, {:color_change, choosen_color})
 
-    %Game{game | shown_color: choosen_color, pick_from_deck: @max_pick_from_deck + 4}
+    %{game | shown_color: choosen_color, pick_from_deck: @max_pick_from_deck + 4}
     |> pick_card(4)
   end
 
   defp effects(game, {:special, :color_change}, choosen_color, _previous) do
     EventManager.notify(game.name, {:color_change, choosen_color})
-    %Game{game | shown_color: choosen_color}
+    %{game | shown_color: choosen_color}
   end
 
   defp effects(game, {_color, :reverse}, _choosen_color, previous) do
     EventManager.notify(game.name, {:reverse, previous})
     [player | players] = Enum.reverse(game.players)
-    %Game{game | players: players ++ [player]}
+    %{game | players: players ++ [player]}
   end
 
   defp effects(game, {_color, :turn}, _choosen_color, previous) do
@@ -706,7 +706,7 @@ defmodule ZeroGame.Game do
        ) do
     player = {pid, name, cards -- [played_card], status}
 
-    %Game{game | players: [player | players]}
+    %{game | players: [player | players]}
     |> shown_card(played_card)
     |> next_player()
   end
@@ -741,15 +741,15 @@ defmodule ZeroGame.Game do
   end
 
   defp shown_card(game, card) do
-    %Game{game | shown: [card | game.shown]}
+    %{game | shown: [card | game.shown]}
   end
 
   defp shown_card(%Game{deck: [{:special, _} = card | deck]} = game) do
-    shown_card(%Game{game | deck: deck ++ [card]})
+    shown_card(%{game | deck: deck ++ [card]})
   end
 
   defp shown_card(%Game{deck: [card | deck]} = game) do
-    %Game{game | shown: [card | game.shown], deck: deck}
+    %{game | shown: [card | game.shown], deck: deck}
   end
 
   if Mix.env() == :test do

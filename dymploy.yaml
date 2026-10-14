@@ -1,0 +1,70 @@
+# How dymploy builds and deploys Zero. Check it with `dymploy validate`; try it without pushing anything with
+# `dymploy try`.
+version: 1
+
+build:
+  image:
+    dockerfile: ci/Dockerfile.build
+    context: ci
+  env:
+    MIX_ENV: prod
+    # What can be reused between builds lives under /cache (kept per repository by dymploy).
+    MIX_HOME: /cache/mix
+    HEX_HOME: /cache/hex
+  cache:
+    - {name: mix, path: /cache/mix}
+    - {name: hex, path: /cache/hex}
+  limits: {cpus: 2, memory: 2g, timeout: 10m}
+  steps:
+    - name: dependencies
+      run: |
+        mix local.hex --force
+        mix local.rebar --force
+        mix deps.get --only prod
+    - name: tests
+      run: MIX_ENV=test mix do deps.get, test
+    - name: release
+      run: mix release
+
+artifact:
+  name: zero
+  paths: [_build/prod/rel/zero]
+
+deploy:
+  target: rowan-zero
+  timeout: 5m
+  steps:
+    - name: install the release
+      run: |
+        releases="$HOME/releases"
+        new="$releases/$DYMPLOY_SHORT_COMMIT"
+        rm -rf "$new"
+        mkdir -p "$new"
+        tar -xzf "$DYMPLOY_ARTIFACT" -C "$new" --strip-components=1
+    - name: install the environment
+      # The game has no secrets: the service only needs the port. The file is read by the service's group only.
+      run: |
+        printf 'PORT=4015\n' > "$HOME/zero.env.new"
+        chmod 0640 "$HOME/zero.env.new"
+        mv -f "$HOME/zero.env.new" "$HOME/zero.env"
+    - name: activate the release and restart the service
+      # Writing .deployed makes a root-owned systemd path unit restart the service: no privileges are needed here.
+      # The step waits until the service has really been restarted.
+      run: |
+        before=$(systemctl show -p ActiveEnterTimestampMonotonic --value zero.service)
+        ln -sfn "$HOME/releases/$DYMPLOY_SHORT_COMMIT" "$HOME/current"
+        echo "$DYMPLOY_COMMIT" > "$HOME/.deployed"
+        for i in $(seq 1 30); do
+          now=$(systemctl show -p ActiveEnterTimestampMonotonic --value zero.service)
+          [ "$now" != "$before" ] && exit 0
+          sleep 1
+        done
+        echo "the service was not restarted" >&2
+        exit 1
+    - name: keep the last three releases
+      run: ls -1dt "$HOME"/releases/*/ | tail -n +4 | xargs -r rm -rf
+  check:
+    run: curl -fsS -o /dev/null http://127.0.0.1:4015/
+    attempts: 10
+    interval: 3s
+    timeout: 5s

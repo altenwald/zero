@@ -5,19 +5,20 @@ defmodule ZeroWeb.Request do
   """
 
   @doc """
-  Based on a request (cowboy), it's getting the IP address and translating
-  it to string or search for different fields in case of the loopback IP is
-  detected.
+  Based on a connection, it's getting the IP address and translating it to
+  string or search for the `x-forwarded-for` header in case of the loopback
+  IP is detected (a proxy running in the same machine).
   """
-  def remote_ip(req) do
-    case :cowboy_req.peer(req) do
-      {{127, 0, 0, 1}, _port_number} ->
-        case :cowboy_req.header("x-forwarded-for", req) do
-          :undefined -> "127.0.0.1"
-          remote_ip -> remote_ip
+  @spec remote_ip(Plug.Conn.t()) :: String.t()
+  def remote_ip(conn) do
+    case Plug.Conn.get_peer_data(conn).address do
+      {127, 0, 0, 1} ->
+        case Plug.Conn.get_req_header(conn, "x-forwarded-for") do
+          [remote_ip | _] -> remote_ip
+          [] -> "127.0.0.1"
         end
 
-      {remote_ip, _port_number} ->
+      remote_ip ->
         to_string(:inet.ntoa(remote_ip))
     end
   end
