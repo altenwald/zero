@@ -49,6 +49,7 @@ deploy:
       # The game has no secrets: the service only needs the port. The file is read by the service's group only.
       run: |
         printf 'PORT=4015\n' > "$HOME/zero.env.new"
+        chgrp zero "$HOME/zero.env.new"
         chmod 0640 "$HOME/zero.env.new"
         mv -f "$HOME/zero.env.new" "$HOME/zero.env"
     - name: activate the release and restart the service
